@@ -26,14 +26,22 @@ export default defineConfig({
       use: { viewport: { width: 834, height: 1194 } },
     },
     {
+      name: 'intermediate-768',
+      use: { viewport: { width: 768, height: 1024 } },
+    },
+    {
+      name: 'intermediate-1280',
+      use: { viewport: { width: 1280, height: 800 } },
+    },
+    {
       name: 'desktop-1920',
       use: { viewport: { width: 1920, height: 1080 } },
     },
   ],
   webServer: {
-    command: 'pnpm dev --host 127.0.0.1 --port 4173',
+    command: 'API_KEY=e2e-key pnpm dev --host 127.0.0.1 --port 4173',
     url: baseURL,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 120_000,
   },
 })
