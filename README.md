@@ -1,75 +1,50 @@
-# React + TypeScript + Vite
+# MBST Smartphone Store
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+MBST is a React application for browsing smartphone Products, opening Product details, and managing a Cart. This first application-shell slice establishes the routes, design tokens, shared header, client state, tests, and continuous-integration gates used by later customer journeys.
 
-Currently, two official plugins are available:
+## Requirements
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Node.js 20.19 or newer
+- pnpm 11
 
-## React Compiler
+## Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+pnpm install --frozen-lockfile
+cp .env.example .env
+pnpm dev
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+The challenge API is not called by this shell yet. Later API-backed slices will read `API_KEY` from `.env` and send it as the `x-api-key` header described in `docs/adr/0001-call-challenge-api-from-the-browser.md`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Quality commands
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Each gate runs independently:
 
+```bash
+pnpm format:check
+pnpm lint
+pnpm typecheck
+pnpm build
+pnpm test
+pnpm test:e2e
 ```
+
+Install the Chromium binary before the first local end-to-end run if Playwright has not already done so:
+
+```bash
+pnpm exec playwright install chromium
+```
+
+## Application structure
+
+- `src/app` owns application-level composition when it is needed.
+- `src/features` keeps feature UI and state together behind public `index.ts` exports.
+- `src/components/shared` contains proven shared UI such as the header.
+- `src/components/ui` contains product-agnostic shadcn/ui primitives adapted to the MBST design system.
+- `src/lib` contains shared framework utilities.
+- `e2e` contains critical browser journeys.
+
+The confirmed catalog route is `/`, Product details use `/products/:productId`, and the Cart is available at `/cart`. The header exposes the home and Cart links on every route. Zustand owns the shared Cart unit count, which starts at zero in this shell.
+
+The interface follows `DESIGN.md`: Helvetica Neue with an Arial fallback, a monochrome palette, square geometry, hairline borders, an 80px header, and responsive page edges of 16px, 40px, and 100px.
