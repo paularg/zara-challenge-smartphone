@@ -3,7 +3,7 @@ import { expect, test, type Page } from '@playwright/test'
 
 import { monitorBrowserProblems } from './browserProblems'
 
-const productsEndpoint = '**/products'
+const productsEndpoint = /\/products(?:\?.*)?$/
 
 const productPayload = (id: number) => ({
   id: `product-${id}`,
@@ -45,7 +45,9 @@ test('catalog loads 20 Products in the reference grid and opens matching details
   })
 
   await page.goto('/')
-  await expect(page.getByRole('status')).toHaveText('Loading Products')
+  await expect(page.getByRole('status', { name: 'Catalog status' })).toHaveText(
+    'Loading Products',
+  )
 
   releaseProducts?.()
 
@@ -105,6 +107,10 @@ test('catalog loads 20 Products in the reference grid and opens matching details
   await expect(page.getByRole('link', { name: 'Cart, 0 items' })).toBeFocused()
   await page.keyboard.press('Tab')
   await expect(
+    page.getByRole('searchbox', { name: 'Search Products' }),
+  ).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(
     cards.first().getByRole('link', { name: 'Open Brand 1 Product 1' }),
   ).toBeFocused()
   await page.keyboard.press('Enter')
@@ -140,9 +146,109 @@ test('catalog recovers from an invalid payload through retry @critical', async (
   await page.keyboard.press('Tab')
   await page.keyboard.press('Tab')
   await page.keyboard.press('Tab')
+  await expect(
+    page.getByRole('searchbox', { name: 'Search Products' }),
+  ).toBeFocused()
+  await page.keyboard.press('Tab')
   await expect(page.getByRole('button', { name: 'Retry' })).toBeFocused()
   await page.keyboard.press('Enter')
   await expect(page.getByText('Product 2')).toBeVisible()
   expect(requestCount).toBe(2)
+  expect(browserProblems, browserProblems.join('\n')).toEqual([])
+})
+
+test('search is shareable, refreshable, navigable, and clearable @critical', async ({
+  page,
+}) => {
+  const browserProblems = monitorBrowserProblems(page)
+  const apiRequests: URL[] = []
+  const samsungProducts = [
+    { ...productPayload(101), brand: 'Samsung', name: 'Galaxy S24 Ultra' },
+    { ...productPayload(102), brand: 'Samsung', name: 'Galaxy A25 5G' },
+  ]
+  const appleProducts = [
+    { ...productPayload(103), brand: 'Apple', name: 'iPhone 15' },
+  ]
+
+  await mockProductImages(page)
+  await page.route(productsEndpoint, (route) => {
+    const requestUrl = new URL(route.request().url())
+    apiRequests.push(requestUrl)
+    const search = requestUrl.searchParams.get('search')
+
+    return route.fulfill({
+      json:
+        search === 'Samsung'
+          ? samsungProducts
+          : search === 'Apple'
+            ? appleProducts
+            : uniqueProducts,
+      status: 200,
+    })
+  })
+
+  await page.goto('/?search=Samsung')
+  const searchInput = page.getByRole('searchbox', { name: 'Search Products' })
+
+  await expect(searchInput).toHaveValue('Samsung')
+  await expect(page.getByText('2 Results')).toBeVisible()
+  await expect(page.getByText('Galaxy S24 Ultra')).toBeVisible()
+  const clearSearchButton = page.getByRole('button', { name: 'Clear search' })
+  expect(await clearSearchButton.boundingBox()).toMatchObject({
+    height: 24,
+    width: 24,
+  })
+  expect(await clearSearchButton.locator('img').boundingBox()).toMatchObject({
+    height: 20,
+    width: 20,
+  })
+  await searchInput.focus()
+  await page.keyboard.press('Tab')
+  await expect(clearSearchButton).toBeFocused()
+
+  const accessibility = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag22aa'])
+    .analyze()
+  expect(
+    accessibility.violations,
+    JSON.stringify(accessibility.violations, null, 2),
+  ).toEqual([])
+
+  await page.reload()
+  await expect(searchInput).toHaveValue('Samsung')
+  await expect(page.getByText('2 Results')).toBeVisible()
+
+  await searchInput.fill('Apple')
+  await expect(page).toHaveURL(/\?search=Apple$/)
+  await expect(page.getByText('1 Result')).toBeVisible()
+  await expect(page.getByText('iPhone 15')).toBeVisible()
+
+  await page.goBack()
+  await expect(page).toHaveURL(/\?search=Samsung$/)
+  await expect(searchInput).toHaveValue('Samsung')
+  await expect(page.getByText('2 Results')).toBeVisible()
+
+  await page.goForward()
+  await expect(page).toHaveURL(/\?search=Apple$/)
+  await expect(searchInput).toHaveValue('Apple')
+  await expect(page.getByText('1 Result')).toBeVisible()
+
+  await page.getByRole('button', { name: 'Clear search' }).click()
+  await expect(page).toHaveURL(/\/$/)
+  await expect(searchInput).toBeFocused()
+  await expect(searchInput).toHaveValue('')
+  await expect(page.getByText('20 Results')).toBeVisible()
+
+  expect(
+    apiRequests.every(
+      (requestUrl) =>
+        !requestUrl.searchParams.has('offset') &&
+        (!requestUrl.searchParams.has('search') ||
+          !requestUrl.searchParams.has('limit')),
+    ),
+  ).toBe(true)
+  expect(
+    apiRequests.map((requestUrl) => requestUrl.searchParams.get('search')),
+  ).toEqual(['Samsung', 'Samsung', 'Apple', 'Samsung', 'Apple', null])
   expect(browserProblems, browserProblems.join('\n')).toEqual([])
 })
