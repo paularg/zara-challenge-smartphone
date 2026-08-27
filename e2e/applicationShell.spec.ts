@@ -1,6 +1,8 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 
+import { monitorBrowserProblems } from './browserProblems'
+
 const publicRoutes = [
   { heading: 'Catalog', path: '/' },
   { heading: 'Product detail', path: '/products/shell-product' },
@@ -10,26 +12,11 @@ const publicRoutes = [
 test('public routes and header navigation work cleanly @smoke', async ({
   page,
 }) => {
-  const browserProblems: string[] = []
+  const browserProblems = monitorBrowserProblems(page)
 
-  page.on('console', (message) => {
-    if (message.type() === 'error' || message.type() === 'warning') {
-      browserProblems.push(`console ${message.type()}: ${message.text()}`)
-    }
-  })
-  page.on('pageerror', (error) => {
-    browserProblems.push(`page error: ${error.message}`)
-  })
-  page.on('response', (response) => {
-    if (response.status() >= 400) {
-      browserProblems.push(`${response.status()} ${response.url()}`)
-    }
-  })
-  page.on('requestfailed', (request) => {
-    browserProblems.push(
-      `request failed: ${request.failure()?.errorText ?? 'unknown error'} ${request.url()}`,
-    )
-  })
+  await page.route('**/products', (route) =>
+    route.fulfill({ json: [], status: 200 }),
+  )
 
   for (const route of publicRoutes) {
     await page.goto(route.path)

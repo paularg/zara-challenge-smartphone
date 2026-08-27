@@ -26,6 +26,7 @@
   --accent-foreground: #000000;
   --destructive: #df0000;
   --border: #000000;
+  --border-subtle: #cccccc;
   --input: #cccccc;
   --ring: #000000;
   --action: #1b1a18;
@@ -57,6 +58,7 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-action: var(--action);
