@@ -1,3 +1,6 @@
 [mcp_servers.chrome-devtools]
 command="pnpx"
 args=["-y", "chrome-devtools-mcp"]
+
+[mcp_servers.figma]
+url="https://mcp.figma.com/mcp"
