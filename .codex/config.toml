@@ -1,0 +1,3 @@
+[mcp_servers.chrome-devtools]
+command="pnpx"
+args=["-y", "chrome-devtools-mcp"]
