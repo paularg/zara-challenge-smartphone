@@ -20,3 +20,17 @@ Read only the documents triggered by the task. Read every matching document befo
 - **Verification** — Read [`docs/verification.md`](docs/verification.md) before validating or reporting any repository change as complete.
 
 Skip these documents for inspection-only work unless they are needed to answer accurately.
+
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked in GitHub Issues using the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical triage roles use their default label names. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Domain documentation uses the single-context layout. See `docs/agents/domain.md`.
