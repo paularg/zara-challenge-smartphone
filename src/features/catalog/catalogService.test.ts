@@ -94,6 +94,47 @@ describe('catalog API boundary', () => {
     expect(result.status).toBe('success')
   })
 
+  it('searches without pagination and returns every normalized unique match', async () => {
+    const controller = new AbortController()
+    const payload = [
+      productPayload('1'),
+      productPayload('1', { name: 'Duplicate must be ignored' }),
+      ...Array.from({ length: 21 }, (_, index) =>
+        productPayload(String(index + 2)),
+      ),
+    ]
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(JSON.stringify(payload), {
+        headers: { 'Content-Type': 'application/json' },
+        status: 200,
+      }),
+    )
+
+    const result = await fetchProducts({
+      apiKey: 'configured-key',
+      fetcher,
+      query: 'Brand 1',
+      signal: controller.signal,
+    })
+
+    const requestUrl = new URL(String(fetcher.mock.calls[0]?.[0]))
+    expect(requestUrl.searchParams.get('search')).toBe('Brand 1')
+    expect(requestUrl.searchParams.has('limit')).toBe(false)
+    expect(requestUrl.searchParams.has('offset')).toBe(false)
+    expect(fetcher).toHaveBeenCalledWith(
+      requestUrl.toString(),
+      expect.objectContaining({ signal: controller.signal }),
+    )
+    expect(result).toMatchObject({ status: 'success' })
+    if (result.status === 'success') {
+      expect(result.products).toHaveLength(22)
+      expect(new Set(result.products.map(({ id }) => id)).size).toBe(22)
+      expect(result.products[0]?.imageUrl).toBe(
+        'https://images.example.com/1.png',
+      )
+    }
+  })
+
   it('reports missing API_KEY clearly without making a request', async () => {
     const fetcher = vi.fn<typeof fetch>()
 

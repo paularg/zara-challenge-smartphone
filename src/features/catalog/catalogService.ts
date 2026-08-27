@@ -1,6 +1,7 @@
 const PRODUCTS_ENDPOINT =
   'https://prueba-tecnica-api-tienda-moviles.onrender.com/products'
 const PRODUCT_LIMIT = 20
+type ProductListScope = 'initial-catalog' | 'search-results'
 
 export type Product = {
   id: string
@@ -23,6 +24,8 @@ export type CatalogResult =
 type FetchProductsOptions = {
   apiKey: string | undefined
   fetcher?: typeof fetch
+  query?: string
+  signal?: AbortSignal
 }
 
 const errorResult = (
@@ -55,7 +58,10 @@ const isProduct = (value: unknown): value is Product =>
 const repairImageUrl = (imageUrl: string) =>
   imageUrl.replace(/^http:\/\//i, 'https://')
 
-export const normalizeProductList = (payload: unknown): CatalogResult => {
+export const normalizeProductList = (
+  payload: unknown,
+  scope: ProductListScope = 'initial-catalog',
+): CatalogResult => {
   const productPayloads = Array.isArray(payload)
     ? payload
     : isProduct(payload)
@@ -83,7 +89,7 @@ export const normalizeProductList = (payload: unknown): CatalogResult => {
       imageUrl: repairImageUrl(product.imageUrl),
     })
 
-    if (products.length === PRODUCT_LIMIT) {
+    if (scope === 'initial-catalog' && products.length === PRODUCT_LIMIT) {
       break
     }
   }
@@ -94,6 +100,8 @@ export const normalizeProductList = (payload: unknown): CatalogResult => {
 export const fetchProducts = async ({
   apiKey,
   fetcher = fetch,
+  query,
+  signal,
 }: FetchProductsOptions): Promise<CatalogResult> => {
   if (!apiKey) {
     return errorResult(
@@ -103,8 +111,15 @@ export const fetchProducts = async ({
   }
 
   try {
-    const response = await fetcher(PRODUCTS_ENDPOINT, {
+    const requestUrl = new URL(PRODUCTS_ENDPOINT)
+
+    if (query) {
+      requestUrl.searchParams.set('search', query)
+    }
+
+    const response = await fetcher(requestUrl.toString(), {
       headers: { 'x-api-key': apiKey },
+      signal,
     })
 
     if (response.status === 401) {
@@ -119,7 +134,10 @@ export const fetchProducts = async ({
     }
 
     try {
-      return normalizeProductList(await response.json())
+      return normalizeProductList(
+        await response.json(),
+        query ? 'search-results' : 'initial-catalog',
+      )
     } catch {
       return invalidPayloadResult()
     }

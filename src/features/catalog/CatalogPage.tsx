@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import closeSmallIcon from '@/assets/close-small.svg'
 import { Button } from '@/components/ui/button'
 
 import type { Product } from './catalogService'
@@ -78,40 +79,92 @@ const LoadingGrid = () => (
 )
 
 export const CatalogPage = () => {
-  const { catalogState, retry } = useCatalog()
+  const {
+    catalogState,
+    clearSearch,
+    confirmedQuery,
+    isSearchPending,
+    query,
+    retry,
+    setQuery,
+  } = useCatalog()
+  const searchInputRef = useRef<HTMLInputElement>(null)
+
+  const handleClearSearch = () => {
+    clearSearch()
+    searchInputRef.current?.focus()
+  }
+
+  const catalogStatus =
+    catalogState.status === 'loading'
+      ? 'Loading Products'
+      : catalogState.status === 'success'
+        ? `${catalogState.products.length} ${
+            catalogState.products.length === 1 ? 'Result' : 'Results'
+          }`
+        : ''
 
   return (
     <section aria-labelledby="catalog-heading" className="pt-6 md:pt-12">
       <h1 className="sr-only" id="catalog-heading">
         Catalog
       </h1>
-      <div className="px-4 py-3 md:px-10 xl:px-[100px]">
-        {catalogState.status === 'loading' ? (
+      <div className="flex flex-col gap-3 px-4 py-3 md:px-10 xl:px-[100px]">
+        <div className="flex h-[27px] items-center gap-3 border-b-[0.5px] pb-2">
+          <label className="sr-only" htmlFor="product-search">
+            Search Products
+          </label>
+          <input
+            autoComplete="off"
+            className="placeholder:text-placeholder focus-visible:outline-ring min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-base leading-[1.2] font-light outline-none focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-search-cancel-button]:appearance-none"
+            id="product-search"
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search for a smartphone..."
+            ref={searchInputRef}
+            type="search"
+            value={query}
+          />
+          {query ? (
+            <button
+              aria-label="Clear search"
+              className="focus-outline -m-0.5 flex size-6 shrink-0 items-center justify-center border-0 bg-transparent p-0"
+              onClick={handleClearSearch}
+              type="button"
+            >
+              <img alt="" className="size-5" src={closeSmallIcon} />
+            </button>
+          ) : null}
+        </div>
+        <div className="flex h-6 items-center">
           <p
+            aria-atomic="true"
+            aria-label="Catalog status"
             className="m-0 text-xs leading-[1.25] font-light uppercase"
             role="status"
           >
-            Loading Products
+            {catalogStatus}
           </p>
-        ) : null}
-        {catalogState.status === 'success' ? (
           <p
-            aria-live="polite"
-            className="m-0 text-xs leading-[1.25] font-light uppercase"
+            aria-atomic="true"
+            aria-label="Search status"
+            className="sr-only"
+            role="status"
           >
-            {catalogState.products.length}{' '}
-            {catalogState.products.length === 1 ? 'Result' : 'Results'}
+            {isSearchPending ? 'Searching Products' : ''}
           </p>
-        ) : null}
+        </div>
       </div>
 
-      <div className="mt-6 px-4 md:mt-12 md:px-10 xl:px-[100px]">
+      <div
+        aria-busy={isSearchPending}
+        className="mt-6 px-4 md:mt-12 md:px-10 xl:px-[100px]"
+      >
         {catalogState.status === 'loading' ? <LoadingGrid /> : null}
         {catalogState.status === 'error' ? (
           <div className="flex min-h-[344px] flex-col items-start justify-center gap-6 border-y-[0.5px] py-10">
             <div className="flex flex-col gap-2" role="alert">
               <h2 className="m-0 text-xl leading-[1.2] font-light uppercase">
-                Catalog unavailable
+                {confirmedQuery ? 'Search unavailable' : 'Catalog unavailable'}
               </h2>
               <p className="m-0 max-w-prose text-xs leading-[1.25] font-light">
                 {catalogState.error.message}
@@ -124,9 +177,22 @@ export const CatalogPage = () => {
         ) : null}
         {catalogState.status === 'success' &&
         catalogState.products.length === 0 ? (
-          <p className="m-0 border-y-[0.5px] py-20 text-center text-xs leading-[1.25] font-light uppercase">
-            No Products found.
-          </p>
+          <div className="flex min-h-[344px] flex-col items-center justify-center gap-6 border-y-[0.5px] py-10 text-center">
+            <p className="m-0 text-xs leading-[1.25] font-light uppercase">
+              {confirmedQuery
+                ? `No Products found for “${confirmedQuery}”.`
+                : 'No Products found.'}
+            </p>
+            {confirmedQuery ? (
+              <Button
+                onClick={handleClearSearch}
+                type="button"
+                variant="outline"
+              >
+                Clear search
+              </Button>
+            ) : null}
+          </div>
         ) : null}
         {catalogState.status === 'success' &&
         catalogState.products.length > 0 ? (
