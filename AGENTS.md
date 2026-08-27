@@ -21,6 +21,12 @@ Read only the documents triggered by the task. Read every matching document befo
 
 Skip these documents for inspection-only work unless they are needed to answer accurately.
 
+## API Integration
+
+- **Contract** — Before implementing or changing an API integration, read [`openapi.json`](openapi.json) in full and follow it as the source of truth for endpoints, schemas, and request/response behavior.
+- **Base URL** — Send API requests to `https://prueba-tecnica-api-tienda-moviles.onrender.com`.
+- **Authentication** — Include the `x-api-key` header in every API request, using the `API_KEY` value from `.env`.
+
 ## Agent skills
 
 ### Issue tracker

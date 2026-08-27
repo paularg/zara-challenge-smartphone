@@ -1,0 +1,256 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Tienda de móviles API",
+    "version": "1.0.0",
+    "description": "API para obtener información de productos de la tienda de móviles"
+  },
+  "components": {
+    "schemas": {
+      "ErrorEntity": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ProductListEntity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "brand": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "basePrice": {
+            "type": "number"
+          },
+          "imageUrl": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "id": "1",
+          "brand": "Apple",
+          "name": "iPhone 12",
+          "basePrice": 909,
+          "imageUrl": "https://www.apple.com/newsroom/images/product/iphone/standard/Apple_announce-iphone12pro_10132020_big.jpg.large.jpg"
+        }
+      },
+      "ProductEntity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "brand": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "basePrice": {
+            "type": "number"
+          },
+          "rating": {
+            "type": "number"
+          },
+          "specs": {
+            "type": "object",
+            "properties": {
+              "screen": {
+                "type": "string"
+              },
+              "resolution": {
+                "type": "string"
+              },
+              "processor": {
+                "type": "string"
+              },
+              "mainCamera": {
+                "type": "string"
+              },
+              "selfieCamera": {
+                "type": "string"
+              },
+              "battery": {
+                "type": "string"
+              },
+              "os": {
+                "type": "string"
+              },
+              "screenRefreshRate": {
+                "type": "string"
+              }
+            }
+          },
+          "colorOptions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "hexCode": {
+                  "type": "string"
+                },
+                "imageUrl": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "storageOptions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "capacity": {
+                  "type": "string"
+                },
+                "price": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "similarProducts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductListEntity"
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key"
+      }
+    },
+    "responses": {
+      "UnauthorizedError": {
+        "description": "Invalid API key"
+      }
+    }
+  },
+  "paths": {
+    "/products": {
+      "get": {
+        "summary": "Get all products",
+        "description": "Get all products",
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search products by brand or name"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Limit the number of products"
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Offset the products"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "All products",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductListEntity"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/products/{id}": {
+      "get": {
+        "summary": "Get product by id",
+        "description": "Get product by id",
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product by id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductEntity"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "404": {
+            "description": "Product not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEntity"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "apiKeyAuth": []
+    }
+  ]
+}
