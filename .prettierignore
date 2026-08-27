@@ -1,0 +1,14 @@
+dist
+node_modules
+playwright-report
+test-results
+.agents
+.codex
+.playwright-cli
+AGENTS.md
+CONTEXT.md
+DESIGN.md
+docs
+openapi.json
+pnpm-lock.yaml
+skills-lock.json
