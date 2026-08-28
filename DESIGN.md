@@ -12,7 +12,7 @@ colors:
   action-active: "#363331"
   text-hover: "#504D49"
   text-muted: "#79736D"
-  placeholder: "#AAAAAA"
+  placeholder: "#79736D"
   border: "#000000"
   border-subtle: "#CCCCCC"
   disabled-surface: "#F3F2F2"
@@ -192,7 +192,7 @@ The palette is monochrome and high contrast. White is both the page and componen
 
 - **Black / white:** Use `primary`, `on-primary`, `surface` and `on-surface` for the dominant two-tone composition.
 - **Action neutrals:** Primary controls progress from `action` (#1B1A18) to `action-hover` (#282624) and `action-active` (#363331). Do not substitute a colored brand CTA.
-- **Muted information:** Product brand eyebrows use `text-muted` (#79736D). Search placeholders use `placeholder` (#AAAAAA).
+- **Muted information:** Product brand eyebrows and Search placeholders use `text-muted` / `placeholder` (#79736D), preserving WCAG AA contrast on white.
 - **Rules and disabled states:** Use black 0.5px rules for structural boundaries, #CCCCCC for unselected control borders, and the dedicated disabled surface/border/text trio.
 - **Destructive action:** `danger` (#DF0000) is used for delete/remove copy, not as a filled destructive button in the observed screens.
 - **Product swatches:** Graphite, blue, grey and gold are content data. Keep them inside the 20px swatch, surrounded by a 24px square selection control.
@@ -291,7 +291,7 @@ The header is a white, 80px-high horizontal bar. The MBST vector sits on the lef
 
 ### Search and result summary
 
-The search field is only a text row and bottom hairline—never a filled or rounded input. Empty text is #AAAAAA; entered text is black. The result count sits beneath it in 12px uppercase. A filter/color region exists in the desktop composition but is hidden at zero opacity in the observed catalogue state; do not expose it unless the product behavior requires it.
+The search field is only a text row and bottom hairline—never a filled or rounded input. Empty text is #79736D so it retains WCAG AA contrast on white; entered text is black. The result count sits beneath it in 12px uppercase. A filter/color region exists in the desktop composition but is hidden at zero opacity in the observed catalogue state; do not expose it unless the product behavior requires it.
 
 ### Product card
 

@@ -1,7 +1,11 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
 
-import { monitorBrowserProblems } from './browserProblems'
+import {
+  expectNoHorizontalPageOverflow,
+  monitorBrowserProblems,
+  pressNextTabStop,
+} from './browserProblems'
 
 const catalogEndpoint =
   /^https:\/\/prueba-tecnica-api-tienda-moviles\.onrender\.com\/products(?:\?.*)?$/
@@ -87,6 +91,7 @@ test('direct Product detail preserves the reference composition and accessible r
     releaseProduct = resolve
   })
 
+  await page.emulateMedia({ reducedMotion: 'reduce' })
   await mockProductImages(page)
   await page.route(detailEndpoint, async (route) => {
     requestApiKey = route.request().headers()['x-api-key']
@@ -110,6 +115,7 @@ test('direct Product detail preserves the reference composition and accessible r
     page.getByText('A flagship Product built for demanding customers.'),
   ).toBeVisible()
   expect(requestApiKey).toBe('e2e-key')
+  await expectNoHorizontalPageOverflow(page)
 
   const image = page.getByRole('img', {
     name: 'Samsung Galaxy S24 Ultra',
@@ -136,14 +142,49 @@ test('direct Product detail preserves the reference composition and accessible r
     similarProducts.getByRole('link', { name: 'Open Apple iPhone 15 Pro' }),
   ).toBeVisible()
 
+  const firstSimilarProductBox = await similarProducts
+    .getByRole('listitem')
+    .first()
+    .boundingBox()
+  if (viewportWidth === 393) {
+    expect(firstSimilarProductBox).toMatchObject({
+      height: 344,
+      width: 344,
+      x: 16,
+    })
+  } else if (viewportWidth === 768 || viewportWidth === 834) {
+    expect(firstSimilarProductBox).toMatchObject({
+      height: 377,
+      width: 377,
+      x: 40,
+    })
+  } else if (viewportWidth === 1280) {
+    expect(firstSimilarProductBox).toMatchObject({
+      height: 344,
+      width: 344,
+      x: 40,
+    })
+  } else if (viewportWidth === 1920) {
+    expect(firstSimilarProductBox).toMatchObject({
+      height: 344,
+      width: 344,
+      x: 360,
+    })
+  }
+
   const carousel = page.getByRole('list', {
     name: 'Similar Products carousel',
   })
+  expect(
+    await page.evaluate(
+      () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    ),
+  ).toBe(true)
   await carousel.focus()
   await page.keyboard.press('ArrowRight')
-  await expect
-    .poll(() => carousel.evaluate((element) => element.scrollLeft))
-    .toBeGreaterThan(0)
+  expect(
+    await carousel.evaluate((element) => element.scrollLeft),
+  ).toBeGreaterThan(0)
 
   const accessibility = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag22aa'])
@@ -192,15 +233,15 @@ test('Product variant configuration works by pointer and keyboard without extra 
     expect(storageBoxes.map((box) => box?.height)).toEqual([65, 65, 65])
   }
 
-  await page.keyboard.press('Tab')
+  await pressNextTabStop(page)
   await expect(page.getByText('Skip to content')).toBeFocused()
-  await page.keyboard.press('Tab')
+  await pressNextTabStop(page)
   await expect(page.getByRole('link', { name: 'MBST home' })).toBeFocused()
-  await page.keyboard.press('Tab')
+  await pressNextTabStop(page)
   await expect(page.getByRole('link', { name: 'Cart, 0 items' })).toBeFocused()
-  await page.keyboard.press('Tab')
+  await pressNextTabStop(page)
   await expect(page.getByRole('button', { name: 'Back' })).toBeFocused()
-  await page.keyboard.press('Tab')
+  await pressNextTabStop(page)
   await expect(storage256).toBeFocused()
 
   await page.keyboard.press('ArrowRight')
@@ -213,7 +254,7 @@ test('Product variant configuration works by pointer and keyboard without extra 
     'solid',
   )
 
-  await page.keyboard.press('Tab')
+  await pressNextTabStop(page)
   await expect(black).toBeFocused()
   await page.keyboard.press('ArrowRight')
 
@@ -270,6 +311,7 @@ test('catalog navigation uses history while a direct deep link BACK falls back s
 test('BACK falls back to the catalog from a fresh Product deep link @critical', async ({
   page,
 }) => {
+  const browserProblems = monitorBrowserProblems(page)
   await mockProductImages(page)
   await page.route(catalogEndpoint, (route) =>
     route.fulfill({ json: [], status: 200 }),
@@ -283,11 +325,13 @@ test('BACK falls back to the catalog from a fresh Product deep link @critical', 
 
   await expect(page).toHaveURL(/\/$/)
   await expect(page.getByRole('heading', { name: 'Catalog' })).toBeVisible()
+  expect(browserProblems, browserProblems.join('\n')).toEqual([])
 })
 
 test('similar Product navigation reuses payload cards then starts the new Product at focus and scroll origin @critical', async ({
   page,
 }) => {
+  const browserProblems = monitorBrowserProblems(page)
   let detailRequestCount = 0
 
   await mockProductImages(page)
@@ -327,11 +371,27 @@ test('similar Product navigation reuses payload cards then starts the new Produc
     page.getByRole('region', { name: 'Similar Products' }),
   ).toHaveCount(0)
   expect(detailRequestCount).toBe(2)
+  expect(browserProblems, browserProblems.join('\n')).toEqual([])
 })
 
 test('recoverable Product detail states keep navigation and retry available @critical', async ({
   page,
 }) => {
+  const baseUrl =
+    'https://prueba-tecnica-api-tienda-moviles.onrender.com/products'
+  const browserProblems = monitorBrowserProblems(page, {
+    expectedConsoleMessages: [
+      /Failed to load resource: the server responded with a status of 401/,
+      /Failed to load resource: the server responded with a status of 404/,
+      /Failed to load resource: net::ERR_FAILED/,
+      /Cross-Origin Request Blocked:.*\/products\/network/,
+    ],
+    expectedErrorResponseUrls: [
+      `${baseUrl}/authentication`,
+      `${baseUrl}/not-found`,
+    ],
+    expectedFailedRequestUrls: [`${baseUrl}/network`],
+  })
   let networkAttempts = 0
 
   await mockProductImages(page)
@@ -387,11 +447,16 @@ test('recoverable Product detail states keep navigation and retry available @cri
     page.getByRole('heading', { level: 1, name: 'Galaxy S24 Ultra' }),
   ).toBeVisible()
   expect(networkAttempts).toBe(2)
+  expect(browserProblems, browserProblems.join('\n')).toEqual([])
 })
 
 test('failed Product imagery preserves geometry and information @critical', async ({
   page,
 }) => {
+  const browserProblems = monitorBrowserProblems(page, {
+    expectedConsoleMessages: [/Failed to load resource: net::ERR_FAILED/],
+    expectedFailedRequestUrlPrefixes: ['https://images.test/'],
+  })
   await page.route('https://images.test/**', (route) => route.abort('failed'))
   await page.route(detailEndpoint, (route) =>
     route.fulfill({ json: productDetailsPayload(), status: 200 }),
@@ -406,4 +471,5 @@ test('failed Product imagery preserves geometry and information @critical', asyn
   const fallbackBox = await fallback.boundingBox()
   expect(fallbackBox?.height).toBeGreaterThanOrEqual(273)
   await expect(page.getByText('From 1099 EUR')).toBeVisible()
+  expect(browserProblems, browserProblems.join('\n')).toEqual([])
 })

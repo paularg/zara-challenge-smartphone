@@ -1,4 +1,10 @@
-import { cleanup, render, screen, within } from '@testing-library/react'
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import {
   createMemoryRouter,
@@ -87,6 +93,28 @@ describe('Cart route', () => {
     expect(pay).toHaveAccessibleDescription(
       'Checkout is outside this exercise.',
     )
+  })
+
+  it('replaces a failed Product image with an accessible fallback', () => {
+    useCartStore.getState().addLine(galaxyVariant)
+    renderCart()
+
+    fireEvent.error(
+      screen.getByRole('img', {
+        name: 'Samsung Galaxy S24 Ultra in Blue titanium',
+      }),
+    )
+
+    expect(
+      screen.getByRole('img', {
+        name: 'Samsung Galaxy S24 Ultra in Blue titanium image unavailable',
+      }),
+    ).toHaveTextContent('Image unavailable')
+    expect(
+      screen.queryByRole('img', {
+        name: 'Samsung Galaxy S24 Ultra in Blue titanium',
+      }),
+    ).not.toBeInTheDocument()
   })
 
   it('decrements a Cart line, announces the change, and removes it at zero', async () => {

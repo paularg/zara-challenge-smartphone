@@ -19,7 +19,7 @@ Apply the sources in this order:
 
 The live API, rather than Figma's example content, owns Product names, variants, prices, images, and specifications. This corrects stale mock values such as Figma's `1 GB` storage label when the API returns `1 TB`.
 
-The public original Figma prototype was inspected for its desktop and mobile navigation flows. The repository's copied Figma file could not be read through MCP because the authenticated Starter plan had reached its tool-call limit. Before final visual acceptance, retry access to the copied file; if it remains unavailable, verify against `DESIGN.md` and the public prototype and report that constraint rather than claiming unverified pixel parity.
+The public original Figma prototype was inspected for its desktop and mobile navigation flows. Access to the repository copy was retried successfully on 2026-08-28. The `Design` page (`20602:154392`) and its desktop (`20620:9054`), tablet (`20669:2483`), and mobile (`20669:2484`) sections were inspected directly, including Catalog, Product detail, filled Cart, and empty Cart frames. Final visual acceptance therefore uses those frames together with `DESIGN.md`; there is no remaining Figma-access constraint.
 
 ## Technology and constraints
 

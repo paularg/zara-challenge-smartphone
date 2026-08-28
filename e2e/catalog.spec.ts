@@ -1,7 +1,11 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
 
-import { monitorBrowserProblems } from './browserProblems'
+import {
+  expectNoHorizontalPageOverflow,
+  monitorBrowserProblems,
+  pressNextTabStop,
+} from './browserProblems'
 
 const productsEndpoint = /\/products(?:\?.*)?$/
 
@@ -89,6 +93,13 @@ test('catalog loads 20 Products in the reference grid and opens matching details
   ).toBeVisible()
   await expect(cards.first()).toContainText('100 EUR')
   expect(requestApiKey).toBe('e2e-key')
+  await expectNoHorizontalPageOverflow(page)
+  expect(
+    await page
+      .getByRole('searchbox', { name: 'Search Products' })
+      .evaluate((input) => getComputedStyle(input, '::placeholder').color),
+    'The placeholder token must retain at least 4.5:1 contrast on white.',
+  ).toBe('rgb(121, 115, 109)')
 
   const cardBoxes = await cards.evaluateAll((elements) =>
     elements.slice(0, 5).map((element) => {
@@ -127,19 +138,19 @@ test('catalog loads 20 Products in the reference grid and opens matching details
     JSON.stringify(accessibility.violations, null, 2),
   ).toEqual([])
 
-  await page.keyboard.press('Tab')
+  await pressNextTabStop(page)
   await expect(
     page.getByRole('link', { name: 'Skip to content' }),
   ).toBeFocused()
-  await page.keyboard.press('Tab')
+  await pressNextTabStop(page)
   await expect(page.getByRole('link', { name: 'MBST home' })).toBeFocused()
-  await page.keyboard.press('Tab')
+  await pressNextTabStop(page)
   await expect(page.getByRole('link', { name: 'Cart, 0 items' })).toBeFocused()
-  await page.keyboard.press('Tab')
+  await pressNextTabStop(page)
   await expect(
     page.getByRole('searchbox', { name: 'Search Products' }),
   ).toBeFocused()
-  await page.keyboard.press('Tab')
+  await pressNextTabStop(page)
   await expect(
     cards.first().getByRole('link', { name: 'Open Brand 1 Product 1' }),
   ).toBeFocused()
@@ -172,14 +183,14 @@ test('catalog recovers from an invalid payload through retry @critical', async (
   await expect(page.getByRole('alert')).toContainText(
     'The Product catalog response is invalid.',
   )
-  await page.keyboard.press('Tab')
-  await page.keyboard.press('Tab')
-  await page.keyboard.press('Tab')
-  await page.keyboard.press('Tab')
+  await pressNextTabStop(page)
+  await pressNextTabStop(page)
+  await pressNextTabStop(page)
+  await pressNextTabStop(page)
   await expect(
     page.getByRole('searchbox', { name: 'Search Products' }),
   ).toBeFocused()
-  await page.keyboard.press('Tab')
+  await pressNextTabStop(page)
   await expect(page.getByRole('button', { name: 'Retry' })).toBeFocused()
   await page.keyboard.press('Enter')
   await expect(page.getByText('Product 2')).toBeVisible()
@@ -233,7 +244,7 @@ test('search is shareable, refreshable, navigable, and clearable @critical', asy
     width: 20,
   })
   await searchInput.focus()
-  await page.keyboard.press('Tab')
+  await pressNextTabStop(page)
   await expect(clearSearchButton).toBeFocused()
 
   const accessibility = await new AxeBuilder({ page })

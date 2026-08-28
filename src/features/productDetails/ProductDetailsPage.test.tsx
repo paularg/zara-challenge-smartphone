@@ -498,7 +498,7 @@ describe('Product detail route', () => {
     expect(scrollTo).toHaveBeenCalledWith({ top: 0 })
   })
 
-  it('provides keyboard scrolling on the clipped similar Products carousel', async () => {
+  it('provides immediate keyboard scrolling on the clipped similar Products carousel', async () => {
     vi.stubEnv('API_KEY', 'test-key')
     vi.stubGlobal(
       'fetch',
@@ -515,6 +515,6 @@ describe('Product detail route', () => {
     fireEvent.keyDown(carousel, { key: 'ArrowRight' })
 
     expect(carousel).toHaveFocus()
-    expect(scrollBy).toHaveBeenCalledWith({ behavior: 'smooth', left: 344 })
+    expect(scrollBy).toHaveBeenCalledWith({ behavior: 'auto', left: 344 })
   })
 })

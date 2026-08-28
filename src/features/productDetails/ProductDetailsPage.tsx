@@ -154,7 +154,7 @@ const ProductContent = ({
 
     event.preventDefault()
     carouselRef.current?.scrollBy({
-      behavior: 'smooth',
+      behavior: 'auto',
       left: event.key === 'ArrowRight' ? 344 : -344,
     })
   }
@@ -210,7 +210,7 @@ const ProductContent = ({
                           type="radio"
                         />
                         <label
-                          className="border-border-subtle peer-checked:border-border peer-focus-visible:outline-foreground flex h-12 min-w-[89px] cursor-pointer items-center justify-center border px-4 text-xs font-light peer-focus-visible:relative peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 xl:h-[65px] xl:min-w-[95px] xl:text-sm"
+                          className="border-border-subtle peer-checked:border-border peer-focus:outline-foreground flex h-12 min-w-[89px] cursor-pointer items-center justify-center border px-4 text-xs font-light peer-focus:relative peer-focus:outline-2 peer-focus:outline-offset-2 xl:h-[65px] xl:min-w-[95px] xl:text-sm"
                           htmlFor={optionId}
                         >
                           {storage.capacity}
@@ -240,7 +240,7 @@ const ProductContent = ({
                         type="radio"
                       />
                       <label
-                        className="peer-checked:[&>span]:border-border peer-focus-visible:[&>span]:outline-foreground flex cursor-pointer flex-col items-start gap-2 text-[10px] leading-[1.2] font-light uppercase peer-focus-visible:[&>span]:outline-2 peer-focus-visible:[&>span]:outline-offset-2"
+                        className="peer-checked:[&>span]:border-border peer-focus:[&>span]:outline-foreground flex cursor-pointer flex-col items-start gap-2 text-[10px] leading-[1.2] font-light uppercase peer-focus:[&>span]:outline-2 peer-focus:[&>span]:outline-offset-2"
                         htmlFor={optionId}
                       >
                         <span

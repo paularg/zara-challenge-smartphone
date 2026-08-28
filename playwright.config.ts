@@ -19,23 +19,42 @@ export default defineConfig({
   projects: [
     {
       name: 'mobile-393',
-      use: { viewport: { width: 393, height: 852 } },
+      use: { browserName: 'chromium', viewport: { width: 393, height: 852 } },
     },
     {
       name: 'tablet-834',
-      use: { viewport: { width: 834, height: 1194 } },
+      use: { browserName: 'chromium', viewport: { width: 834, height: 1194 } },
     },
     {
       name: 'intermediate-768',
-      use: { viewport: { width: 768, height: 1024 } },
+      use: { browserName: 'chromium', viewport: { width: 768, height: 1024 } },
     },
     {
       name: 'intermediate-1280',
-      use: { viewport: { width: 1280, height: 800 } },
+      use: { browserName: 'chromium', viewport: { width: 1280, height: 800 } },
     },
     {
       name: 'desktop-1920',
-      use: { viewport: { width: 1920, height: 1080 } },
+      use: { browserName: 'chromium', viewport: { width: 1920, height: 1080 } },
+    },
+    {
+      name: 'chrome-mobile-393',
+      grep: /@critical/,
+      use: {
+        browserName: 'chromium',
+        channel: 'chrome',
+        viewport: { width: 393, height: 852 },
+      },
+    },
+    {
+      name: 'firefox-mobile-393',
+      grep: /@critical/,
+      use: { browserName: 'firefox', viewport: { width: 393, height: 852 } },
+    },
+    {
+      name: 'webkit-mobile-393',
+      grep: /@critical/,
+      use: { browserName: 'webkit', viewport: { width: 393, height: 852 } },
     },
   ],
   webServer: {

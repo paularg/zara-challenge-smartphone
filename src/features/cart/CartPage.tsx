@@ -32,42 +32,58 @@ type CartLineItemProps = {
   onRemoveOne: (line: CartLine) => void
 }
 
-const CartLineItem = ({ line, onRemoveOne }: CartLineItemProps) => (
-  <li className="group flex h-[197.863px] w-full gap-6 md:h-[324px] md:gap-10 xl:w-[548px]">
-    <div className="bg-surface h-full w-40 shrink-0 md:w-[262px]">
-      <img
-        alt={`${line.brand} ${line.name} in ${line.color}`}
-        className="h-full w-full object-contain"
-        src={line.imageUrl}
-      />
-    </div>
+const CartLineItem = ({ line, onRemoveOne }: CartLineItemProps) => {
+  const [imageFailed, setImageFailed] = useState(false)
+  const imageName = `${line.brand} ${line.name} in ${line.color}`
 
-    <div className="group-hover:bg-primary group-hover:text-primary-foreground flex min-w-0 flex-1 flex-col justify-between py-10 text-xs leading-4 font-light">
-      <div className="flex min-w-0 flex-col gap-5">
-        <div className="flex min-w-0 flex-col gap-1 uppercase">
-          <p className="truncate">{line.name}</p>
-          <p className="truncate">
-            {line.storage} | {line.color}
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-1 uppercase">
-          <p>{formatPrice(line.unitPrice)}</p>
-          <p>QTY: {line.quantity}</p>
-        </div>
+  return (
+    <li className="group flex h-[197.863px] w-full gap-6 md:h-[324px] md:gap-10 xl:w-[548px]">
+      <div className="h-full w-40 shrink-0 md:w-[262px]">
+        {imageFailed ? (
+          <div
+            aria-label={`${imageName} image unavailable`}
+            className="text-muted-foreground flex size-full items-center justify-center text-center text-xs font-light uppercase"
+            role="img"
+          >
+            Image unavailable
+          </div>
+        ) : (
+          <img
+            alt={imageName}
+            className="h-full w-full object-contain"
+            onError={() => setImageFailed(true)}
+            src={line.imageUrl}
+          />
+        )}
       </div>
 
-      <button
-        aria-label={`Remove one ${line.name} from Cart`}
-        className="focus-outline text-destructive group-hover:text-primary-foreground min-h-6 w-fit cursor-pointer border-0 bg-transparent p-0 text-xs leading-4 font-light uppercase"
-        onClick={() => onRemoveOne(line)}
-        type="button"
-      >
-        Remove
-      </button>
-    </div>
-  </li>
-)
+      <div className="group-hover:bg-primary group-hover:text-primary-foreground flex min-w-0 flex-1 flex-col justify-between py-10 text-xs leading-4 font-light">
+        <div className="flex min-w-0 flex-col gap-5">
+          <div className="flex min-w-0 flex-col gap-1 uppercase">
+            <p className="truncate">{line.name}</p>
+            <p className="truncate">
+              {line.storage} | {line.color}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-1 uppercase">
+            <p>{formatPrice(line.unitPrice)}</p>
+            <p>QTY: {line.quantity}</p>
+          </div>
+        </div>
+
+        <button
+          aria-label={`Remove one ${line.name} from Cart`}
+          className="focus-outline text-destructive group-hover:text-primary-foreground min-h-6 w-fit cursor-pointer border-0 bg-transparent p-0 text-xs leading-4 font-light uppercase"
+          onClick={() => onRemoveOne(line)}
+          type="button"
+        >
+          Remove
+        </button>
+      </div>
+    </li>
+  )
+}
 
 type CartTotalProps = {
   total: number

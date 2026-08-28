@@ -30,10 +30,10 @@ pnpm test
 pnpm test:e2e
 ```
 
-Install the Chromium binary before the first local end-to-end run if Playwright has not already done so:
+Install the browser binaries before the first local end-to-end run if Playwright has not already done so:
 
 ```bash
-pnpm exec playwright install chromium
+pnpm exec playwright install chromium chrome firefox webkit
 ```
 
 ## Application structure

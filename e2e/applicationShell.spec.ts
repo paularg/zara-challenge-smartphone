@@ -1,7 +1,11 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 
-import { monitorBrowserProblems } from './browserProblems'
+import {
+  expectNoHorizontalPageOverflow,
+  monitorBrowserProblems,
+  pressNextTabStop,
+} from './browserProblems'
 
 const publicRoutes = [
   { heading: 'Catalog', path: '/' },
@@ -65,6 +69,7 @@ test('public routes and header navigation work cleanly @smoke', async ({
     await expect(
       page.getByRole('heading', { level: 1, name: route.heading }),
     ).toBeVisible()
+    await expectNoHorizontalPageOverflow(page)
 
     const accessibility = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag22aa'])
@@ -84,7 +89,7 @@ test('public routes and header navigation work cleanly @smoke', async ({
   await expect(page).toHaveURL(/\/$/)
 
   await page.goto('/')
-  await page.keyboard.press('Tab')
+  await pressNextTabStop(page)
   const skipLink = page.getByRole('link', { name: 'Skip to content' })
   await expect(skipLink).toBeFocused()
   await page.keyboard.press('Enter')
