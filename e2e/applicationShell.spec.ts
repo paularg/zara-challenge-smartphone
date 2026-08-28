@@ -5,17 +5,59 @@ import { monitorBrowserProblems } from './browserProblems'
 
 const publicRoutes = [
   { heading: 'Catalog', path: '/' },
-  { heading: 'Product detail', path: '/products/shell-product' },
+  { heading: 'Shell Product', path: '/products/shell-product' },
   { heading: 'Cart', path: '/cart' },
 ] as const
+
+const productsEndpoint =
+  /^https:\/\/prueba-tecnica-api-tienda-moviles\.onrender\.com\/products$/
+const shellProductEndpoint =
+  /^https:\/\/prueba-tecnica-api-tienda-moviles\.onrender\.com\/products\/shell-product$/
+
+const shellProduct = {
+  id: 'shell-product',
+  brand: 'Shell Brand',
+  name: 'Shell Product',
+  description: 'Shell description',
+  basePrice: 100,
+  specs: {
+    screen: 'Screen',
+    resolution: 'Resolution',
+    processor: 'Processor',
+    mainCamera: 'Main camera',
+    selfieCamera: 'Selfie camera',
+    battery: 'Battery',
+    os: 'OS',
+    screenRefreshRate: 'Refresh rate',
+  },
+  colorOptions: [
+    {
+      name: 'Black',
+      hexCode: '#000000',
+      imageUrl: 'https://images.test/shell-product.svg',
+    },
+  ],
+  storageOptions: [{ capacity: '128 GB', price: 100 }],
+  similarProducts: [],
+}
 
 test('public routes and header navigation work cleanly @smoke', async ({
   page,
 }) => {
   const browserProblems = monitorBrowserProblems(page)
 
-  await page.route('**/products', (route) =>
+  await page.route(productsEndpoint, (route) =>
     route.fulfill({ json: [], status: 200 }),
+  )
+  await page.route(shellProductEndpoint, (route) =>
+    route.fulfill({ json: shellProduct, status: 200 }),
+  )
+  await page.route('https://images.test/**', (route) =>
+    route.fulfill({
+      body: '<svg xmlns="http://www.w3.org/2000/svg" width="260" height="320" />',
+      contentType: 'image/svg+xml',
+      status: 200,
+    }),
   )
 
   for (const route of publicRoutes) {

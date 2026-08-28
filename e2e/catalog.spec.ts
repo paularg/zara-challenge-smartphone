@@ -17,6 +17,33 @@ const uniqueProducts = Array.from({ length: 20 }, (_, index) =>
   productPayload(index + 1),
 )
 
+const productDetail = {
+  ...productPayload(1),
+  description: 'Product 1 description',
+  specs: {
+    screen: 'Screen',
+    resolution: 'Resolution',
+    processor: 'Processor',
+    mainCamera: 'Main camera',
+    selfieCamera: 'Selfie camera',
+    battery: 'Battery',
+    os: 'OS',
+    screenRefreshRate: 'Refresh rate',
+  },
+  colorOptions: [
+    {
+      name: 'Black',
+      hexCode: '#000000',
+      imageUrl: 'http://images.test/product-1.svg',
+    },
+  ],
+  storageOptions: [{ capacity: '128 GB', price: 100 }],
+  similarProducts: [],
+}
+
+const productDetailEndpoint =
+  /^https:\/\/prueba-tecnica-api-tienda-moviles\.onrender\.com\/products\/product-1$/
+
 const mockProductImages = async (page: Page) => {
   await page.route('https://images.test/**', (route) =>
     route.fulfill({
@@ -38,6 +65,9 @@ test('catalog loads 20 Products in the reference grid and opens matching details
   })
 
   await mockProductImages(page)
+  await page.route(productDetailEndpoint, (route) =>
+    route.fulfill({ json: productDetail, status: 200 }),
+  )
   await page.route(productsEndpoint, async (route) => {
     requestApiKey = route.request().headers()['x-api-key']
     await productsReleased
@@ -116,7 +146,7 @@ test('catalog loads 20 Products in the reference grid and opens matching details
   await page.keyboard.press('Enter')
   await expect(page).toHaveURL(/\/products\/product-1$/)
   await expect(
-    page.getByRole('heading', { level: 1, name: 'Product detail' }),
+    page.getByRole('heading', { level: 1, name: 'Product 1' }),
   ).toBeVisible()
 
   expect(browserProblems, browserProblems.join('\n')).toEqual([])
