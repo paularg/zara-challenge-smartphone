@@ -68,17 +68,23 @@ const jsonResponse = (payload: unknown, status = 200) =>
 const renderProductDetails = (
   initialEntries = ['/products/galaxy-s24-ultra'],
 ) => {
+  const onAddToCart = vi.fn()
   window.history.replaceState({ idx: initialEntries.length - 1 }, '')
   const router = createMemoryRouter(
     [
       { path: '/', element: <h1>Catalog</h1> },
-      { path: '/products/:productId', element: <ProductDetailsPage /> },
+      {
+        path: '/products/:productId',
+        element: <ProductDetailsPage onAddToCart={onAddToCart} />,
+      },
+      { path: '/cart', element: <h1>Cart</h1> },
     ],
     { initialEntries },
   )
 
   return {
     ...render(<RouterProvider router={router} />),
+    onAddToCart,
     router,
   }
 }
@@ -190,9 +196,48 @@ describe('Product detail route', () => {
         name: 'Samsung Galaxy S24 Ultra in Blue titanium',
       }),
     ).toHaveAttribute('src', 'https://images.example.com/blue.png')
-    expect(
-      screen.queryByRole('button', { name: 'Add to cart' }),
-    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add to cart' })).toBeEnabled()
+  })
+
+  it('keeps ADD TO CART disabled until the variant is complete and supports keyboard activation', async () => {
+    const user = userEvent.setup()
+    vi.stubEnv('API_KEY', 'test-key')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(jsonResponse(productDetailsPayload())),
+    )
+    const { onAddToCart, router } = renderProductDetails()
+
+    const storageGroup = await screen.findByRole('group', { name: 'Storage' })
+    const colorGroup = screen.getByRole('group', { name: 'Color' })
+    const addToCart = screen.getByRole('button', { name: 'Add to cart' })
+
+    expect(addToCart).toBeDisabled()
+    await user.click(
+      within(storageGroup).getByRole('radio', { name: '512 GB' }),
+    )
+    expect(addToCart).toBeDisabled()
+    await user.click(
+      within(colorGroup).getByRole('radio', { name: 'Blue titanium' }),
+    )
+    expect(addToCart).toBeEnabled()
+
+    addToCart.focus()
+    await user.keyboard('{Enter}')
+
+    expect(onAddToCart).toHaveBeenCalledWith(
+      expect.objectContaining({
+        color: expect.objectContaining({ name: 'Blue titanium' }),
+        storage: { capacity: '512 GB', price: 1199 },
+      }),
+    )
+    expect(router.state.location).toMatchObject({
+      pathname: '/cart',
+      state: {
+        cartAnnouncement:
+          'Galaxy S24 Ultra, Blue titanium, 512 GB added to Cart.',
+      },
+    })
   })
 
   it('supports color-first selection and replaces image and price without stale data', async () => {

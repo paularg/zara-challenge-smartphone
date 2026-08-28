@@ -6,7 +6,11 @@ import { ProductCard } from '@/components/shared/ProductCard'
 import { Button } from '@/components/ui/button'
 
 import type { ProductDetails } from './productDetailsService'
-import { createProductVariant, type ProductColor } from './productVariant'
+import {
+  createProductVariant,
+  type ProductColor,
+  type ProductVariant,
+} from './productVariant'
 import { useProductDetails } from './useProductDetails'
 
 const specificationRows = (product: ProductDetails) =>
@@ -108,10 +112,15 @@ const LoadingProduct = () => (
 
 type ProductContentProps = {
   headingRef: React.RefObject<HTMLHeadingElement | null>
+  onAddToCart: (variant: ProductVariant) => void
   product: ProductDetails
 }
 
-const ProductContent = ({ headingRef, product }: ProductContentProps) => {
+const ProductContent = ({
+  headingRef,
+  onAddToCart,
+  product,
+}: ProductContentProps) => {
   const carouselRef = useRef<HTMLUListElement>(null)
   const colorGroupId = useId()
   const storageGroupId = useId()
@@ -251,6 +260,19 @@ const ProductContent = ({ headingRef, product }: ProductContentProps) => {
               </div>
             </fieldset>
           </div>
+          <Button
+            className="h-12 w-full md:w-[260px] xl:h-14 xl:w-full"
+            disabled={!selectedVariant}
+            onClick={() => {
+              if (selectedVariant) {
+                onAddToCart(selectedVariant)
+              }
+            }}
+            size="large"
+            type="button"
+          >
+            Add to cart
+          </Button>
           <p aria-live="polite" className="sr-only" role="status">
             {selectedColor
               ? `Selected color: ${selectedColor.name}.`
@@ -341,12 +363,27 @@ const ProductContent = ({ headingRef, product }: ProductContentProps) => {
   )
 }
 
-export const ProductDetailsPage = () => {
+type ProductDetailsPageProps = {
+  onAddToCart: (variant: ProductVariant) => void
+}
+
+export const ProductDetailsPage = ({
+  onAddToCart,
+}: ProductDetailsPageProps) => {
   const { productId = '' } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
   const headingRef = useRef<HTMLHeadingElement>(null)
   const { retry, state } = useProductDetails(productId)
+
+  const handleAddToCart = (variant: ProductVariant) => {
+    onAddToCart(variant)
+    navigate('/cart', {
+      state: {
+        cartAnnouncement: `${variant.product.name}, ${variant.color.name}, ${variant.storage.capacity} added to Cart.`,
+      },
+    })
+  }
 
   useEffect(() => {
     if (
@@ -401,6 +438,7 @@ export const ProductDetailsPage = () => {
     <ProductContent
       headingRef={headingRef}
       key={state.product.id}
+      onAddToCart={handleAddToCart}
       product={state.product}
     />
   )
