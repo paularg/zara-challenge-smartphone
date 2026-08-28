@@ -1,12 +1,28 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 
 import { Header } from '@/components/shared/Header'
-import { CartPage, useCartStore } from '@/features/cart'
+import { CartPage, selectCartUnitCount, useCartStore } from '@/features/cart'
 import { CatalogPage } from '@/features/catalog'
-import { ProductDetailsPage } from '@/features/productDetails'
+import {
+  ProductDetailsPage,
+  type ProductVariant,
+} from '@/features/productDetails'
 
 const App = () => {
-  const cartUnitCount = useCartStore((state) => state.unitCount)
+  const cartUnitCount = useCartStore(selectCartUnitCount)
+  const addCartLine = useCartStore((state) => state.addLine)
+
+  const handleAddToCart = (variant: ProductVariant) => {
+    addCartLine({
+      brand: variant.product.brand,
+      color: variant.color.name,
+      imageUrl: variant.color.imageUrl,
+      name: variant.product.name,
+      productId: variant.product.id,
+      storage: variant.storage.capacity,
+      unitPrice: variant.storage.price,
+    })
+  }
 
   return (
     <div className="bg-background text-foreground min-h-svh">
@@ -20,7 +36,10 @@ const App = () => {
       <main id="main-content" tabIndex={-1}>
         <Routes>
           <Route path="/" element={<CatalogPage />} />
-          <Route path="/products/:productId" element={<ProductDetailsPage />} />
+          <Route
+            path="/products/:productId"
+            element={<ProductDetailsPage onAddToCart={handleAddToCart} />}
+          />
           <Route path="/cart" element={<CartPage />} />
           <Route path="*" element={<Navigate replace to="/" />} />
         </Routes>

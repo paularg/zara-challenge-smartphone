@@ -176,7 +176,8 @@ test('Product variant configuration works by pointer and keyboard without extra 
 
   await expect(page.getByRole('group', { name: 'Storage' })).toBeVisible()
   await expect(page.getByRole('group', { name: 'Color' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Add to cart' })).toHaveCount(0)
+  const addToCart = page.getByRole('button', { name: 'Add to cart' })
+  await expect(addToCart).toBeDisabled()
 
   const storageBoxes = await Promise.all(
     ['256 GB', '512 GB', '1 TB'].map((capacity) =>
@@ -218,6 +219,7 @@ test('Product variant configuration works by pointer and keyboard without extra 
 
   await expect(blue).toBeFocused()
   await expect(blue).toBeChecked()
+  await expect(addToCart).toBeEnabled()
   const blueId = await blue.getAttribute('id')
   await expect(page.locator(`label[for="${blueId}"] > span`).first()).toHaveCSS(
     'outline-style',

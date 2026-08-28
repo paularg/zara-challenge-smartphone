@@ -6,7 +6,7 @@ import { monitorBrowserProblems } from './browserProblems'
 const publicRoutes = [
   { heading: 'Catalog', path: '/' },
   { heading: 'Shell Product', path: '/products/shell-product' },
-  { heading: 'Cart', path: '/cart' },
+  { heading: 'Cart (0)', path: '/cart' },
 ] as const
 
 const productsEndpoint =
