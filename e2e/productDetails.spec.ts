@@ -112,7 +112,7 @@ test('direct Product detail preserves the reference composition and accessible r
   expect(requestApiKey).toBe('e2e-key')
 
   const image = page.getByRole('img', {
-    name: 'Samsung Galaxy S24 Ultra in Black titanium',
+    name: 'Samsung Galaxy S24 Ultra',
   })
   const imageBox = await image.boundingBox()
   const viewportWidth = page.viewportSize()?.width
@@ -152,6 +152,84 @@ test('direct Product detail preserves the reference composition and accessible r
     accessibility.violations,
     JSON.stringify(accessibility.violations, null, 2),
   ).toEqual([])
+  expect(browserProblems, browserProblems.join('\n')).toEqual([])
+})
+
+test('Product variant configuration works by pointer and keyboard without extra requests @critical', async ({
+  page,
+}) => {
+  const browserProblems = monitorBrowserProblems(page)
+  let detailRequestCount = 0
+
+  await mockProductImages(page)
+  await page.route(detailEndpoint, (route) => {
+    detailRequestCount += 1
+    return route.fulfill({ json: productDetailsPayload(), status: 200 })
+  })
+
+  await page.goto('/products/galaxy-s24-ultra')
+
+  const storage256 = page.getByRole('radio', { name: '256 GB' })
+  const storage512 = page.getByRole('radio', { name: '512 GB' })
+  const black = page.getByRole('radio', { name: 'Black titanium' })
+  const blue = page.getByRole('radio', { name: 'Blue titanium' })
+
+  await expect(page.getByRole('group', { name: 'Storage' })).toBeVisible()
+  await expect(page.getByRole('group', { name: 'Color' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Add to cart' })).toHaveCount(0)
+
+  const storageBoxes = await Promise.all(
+    ['256 GB', '512 GB', '1 TB'].map((capacity) =>
+      page.getByText(capacity, { exact: true }).boundingBox(),
+    ),
+  )
+  if ((page.viewportSize()?.width ?? 0) < 1280) {
+    expect(storageBoxes.map((box) => box?.width)).toEqual([89, 89, 95])
+    expect(storageBoxes.map((box) => box?.height)).toEqual([48, 48, 48])
+  } else {
+    expect(storageBoxes.map((box) => box?.width)).toEqual([95, 95, 95])
+    expect(storageBoxes.map((box) => box?.height)).toEqual([65, 65, 65])
+  }
+
+  await page.keyboard.press('Tab')
+  await expect(page.getByText('Skip to content')).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(page.getByRole('link', { name: 'MBST home' })).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(page.getByRole('link', { name: 'Cart, 0 items' })).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(page.getByRole('button', { name: 'Back' })).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(storage256).toBeFocused()
+
+  await page.keyboard.press('ArrowRight')
+
+  await expect(storage512).toBeFocused()
+  await expect(storage512).toBeChecked()
+  const storage512Id = await storage512.getAttribute('id')
+  await expect(page.locator(`label[for="${storage512Id}"]`)).toHaveCSS(
+    'outline-style',
+    'solid',
+  )
+
+  await page.keyboard.press('Tab')
+  await expect(black).toBeFocused()
+  await page.keyboard.press('ArrowRight')
+
+  await expect(blue).toBeFocused()
+  await expect(blue).toBeChecked()
+  const blueId = await blue.getAttribute('id')
+  await expect(page.locator(`label[for="${blueId}"] > span`).first()).toHaveCSS(
+    'outline-style',
+    'solid',
+  )
+
+  await page.getByText('256 GB', { exact: true }).click()
+  await page.getByText('Black titanium', { exact: true }).click()
+  await expect(storage256).toBeChecked()
+  await expect(black).toBeChecked()
+
+  expect(detailRequestCount).toBe(1)
   expect(browserProblems, browserProblems.join('\n')).toEqual([])
 })
 
@@ -320,7 +398,7 @@ test('failed Product imagery preserves geometry and information @critical', asyn
   await page.goto('/products/galaxy-s24-ultra')
 
   const fallback = page.getByRole('img', {
-    name: 'Samsung Galaxy S24 Ultra in Black titanium image unavailable',
+    name: 'Samsung Galaxy S24 Ultra image unavailable',
   })
   await expect(fallback).toBeVisible()
   const fallbackBox = await fallback.boundingBox()
