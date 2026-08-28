@@ -111,6 +111,9 @@ describe('Cart route', () => {
       screen.getByRole('heading', { level: 1, name: 'Cart (0)' }),
     ).toBeInTheDocument()
     expect(screen.queryByRole('listitem')).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Removed Galaxy S24 Ultra from Cart. Cart is empty.',
+    )
   })
 
   it('does not announce an empty Cart when another variant line remains', async () => {
