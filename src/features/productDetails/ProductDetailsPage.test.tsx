@@ -121,7 +121,7 @@ describe('Product detail route', () => {
     expect(screen.getByText('From 1099 EUR')).toBeInTheDocument()
     expect(
       screen.getByRole('img', {
-        name: 'Samsung Galaxy S24 Ultra in Black titanium',
+        name: 'Samsung Galaxy S24 Ultra',
       }),
     ).toHaveAttribute('src', 'https://images.example.com/black.png')
     expect(screen.queryByText('Selected')).not.toBeInTheDocument()
@@ -144,6 +144,107 @@ describe('Product detail route', () => {
         name: 'Open Apple iPhone 15 Pro',
       }),
     ).toHaveAttribute('href', '/products/iphone-15-pro')
+  })
+
+  it('begins with no selected options and uses storage as the final unit price', async () => {
+    const user = userEvent.setup()
+    vi.stubEnv('API_KEY', 'test-key')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(jsonResponse(productDetailsPayload())),
+    )
+
+    renderProductDetails()
+
+    await screen.findByRole('heading', {
+      level: 1,
+      name: 'Galaxy S24 Ultra',
+    })
+
+    const storageGroup = screen.getByRole('group', { name: 'Storage' })
+    const colorGroup = screen.getByRole('group', { name: 'Color' })
+    const storage = within(storageGroup).getByRole('radio', { name: '512 GB' })
+
+    expect(within(storageGroup).getAllByRole('radio')).toHaveLength(2)
+    expect(within(colorGroup).getAllByRole('radio')).toHaveLength(2)
+    expect(storage).not.toBeChecked()
+    expect(
+      within(colorGroup).getByRole('radio', { name: 'Black titanium' }),
+    ).not.toBeChecked()
+    expect(screen.getByText('From 1099 EUR')).toBeVisible()
+
+    await user.click(storage)
+
+    expect(storage).toBeChecked()
+    expect(screen.getByText('1199 EUR')).toBeVisible()
+    expect(screen.queryByText('From 1099 EUR')).not.toBeInTheDocument()
+    await user.click(
+      within(colorGroup).getByRole('radio', { name: 'Blue titanium' }),
+    )
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Product variant complete.',
+    )
+    expect(screen.getByText('1199 EUR')).toBeVisible()
+    expect(
+      screen.getByRole('img', {
+        name: 'Samsung Galaxy S24 Ultra in Blue titanium',
+      }),
+    ).toHaveAttribute('src', 'https://images.example.com/blue.png')
+    expect(
+      screen.queryByRole('button', { name: 'Add to cart' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('supports color-first selection and replaces image and price without stale data', async () => {
+    const user = userEvent.setup()
+    vi.stubEnv('API_KEY', 'test-key')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(jsonResponse(productDetailsPayload())),
+    )
+
+    renderProductDetails()
+
+    const colorGroup = await screen.findByRole('group', { name: 'Color' })
+    const storageGroup = screen.getByRole('group', { name: 'Storage' })
+    const black = within(colorGroup).getByRole('radio', {
+      name: 'Black titanium',
+    })
+    const blue = within(colorGroup).getByRole('radio', {
+      name: 'Blue titanium',
+    })
+    const storage256 = within(storageGroup).getByRole('radio', {
+      name: '256 GB',
+    })
+    const storage512 = within(storageGroup).getByRole('radio', {
+      name: '512 GB',
+    })
+
+    await user.click(blue)
+
+    expect(blue).toBeChecked()
+    expect(
+      screen.getByRole('img', {
+        name: 'Samsung Galaxy S24 Ultra in Blue titanium',
+      }),
+    ).toHaveAttribute('src', 'https://images.example.com/blue.png')
+    expect(screen.getByText('From 1099 EUR')).toBeVisible()
+
+    await user.click(storage256)
+    await user.click(black)
+    await user.click(storage512)
+
+    expect(black).toBeChecked()
+    expect(blue).not.toBeChecked()
+    expect(storage512).toBeChecked()
+    expect(storage256).not.toBeChecked()
+    expect(
+      screen.getByRole('img', {
+        name: 'Samsung Galaxy S24 Ultra in Black titanium',
+      }),
+    ).toHaveAttribute('src', 'https://images.example.com/black.png')
+    expect(screen.getByText('1199 EUR')).toBeVisible()
+    expect(screen.queryByText('1099 EUR')).not.toBeInTheDocument()
   })
 
   it.each([
@@ -261,13 +362,13 @@ describe('Product detail route', () => {
     renderProductDetails()
 
     const image = await screen.findByRole('img', {
-      name: 'Samsung Galaxy S24 Ultra in Black titanium',
+      name: 'Samsung Galaxy S24 Ultra',
     })
     fireEvent.error(image)
 
     expect(
       screen.getByRole('img', {
-        name: 'Samsung Galaxy S24 Ultra in Black titanium image unavailable',
+        name: 'Samsung Galaxy S24 Ultra image unavailable',
       }),
     ).toHaveTextContent('Image unavailable')
     expect(screen.getByText('From 1099 EUR')).toBeInTheDocument()
