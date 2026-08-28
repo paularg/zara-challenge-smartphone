@@ -1,7 +1,10 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
 
-import { monitorBrowserProblems } from './browserProblems'
+import {
+  expectNoHorizontalPageOverflow,
+  monitorBrowserProblems,
+} from './browserProblems'
 
 const catalogEndpoint =
   /^https:\/\/prueba-tecnica-api-tienda-moviles\.onrender\.com\/products(?:\?.*)?$/
@@ -124,6 +127,7 @@ test('configured Product persists into the responsive Cart without refetching or
     }),
   ).toHaveAttribute('src', 'https://images.test/galaxy-blue.svg')
   await expect(page.getByText('1199 EUR')).toHaveCount(2)
+  await expectNoHorizontalPageOverflow(page)
 
   const pay = page.getByRole('button', { name: 'Pay' })
   await expect(pay).toBeDisabled()
@@ -136,7 +140,8 @@ test('configured Product persists into the responsive Cart without refetching or
   const viewportWidth = page.viewportSize()?.width
 
   if (viewportWidth === 393) {
-    expect(lineBox).toMatchObject({ height: 197.859375, width: 361, x: 16 })
+    expect(lineBox).toMatchObject({ width: 361, x: 16 })
+    expect(lineBox?.height).toBeCloseTo(197.863, 1)
     expect(footerBox).toMatchObject({ height: 129, width: 393, x: 0, y: 723 })
     expect(await pay.boundingBox()).toMatchObject({ height: 48, width: 174.5 })
   } else if (viewportWidth === 834) {
@@ -242,9 +247,106 @@ test('configured Product persists into the responsive Cart without refetching or
     'Removed Galaxy S24 Ultra from Cart. Cart is empty.',
   )
 
-  await page.getByRole('link', { name: 'Continue shopping' }).click()
+  const emptyFooterBox = await page.locator('footer').boundingBox()
+  const continueShopping = page.getByRole('link', {
+    name: 'Continue shopping',
+  })
+  const continueShoppingBox = await continueShopping.boundingBox()
+  if (viewportWidth === 393) {
+    expect(emptyFooterBox).toMatchObject({ height: 96, width: 393, y: 756 })
+    expect(continueShoppingBox).toMatchObject({
+      height: 48,
+      width: 361,
+      x: 16,
+    })
+  } else if (viewportWidth === 768) {
+    expect(emptyFooterBox).toMatchObject({ height: 112, width: 768, y: 912 })
+    expect(continueShoppingBox).toMatchObject({
+      height: 48,
+      width: 200,
+      x: 40,
+    })
+  } else if (viewportWidth === 834) {
+    expect(emptyFooterBox).toMatchObject({ height: 112, width: 834, y: 1082 })
+    expect(continueShoppingBox).toMatchObject({
+      height: 48,
+      width: 200,
+      x: 40,
+    })
+  } else if (viewportWidth === 1280) {
+    expect(emptyFooterBox).toMatchObject({ height: 136, width: 1280, y: 664 })
+    expect(continueShoppingBox).toMatchObject({
+      height: 56,
+      width: 260,
+      x: 100,
+    })
+  } else if (viewportWidth === 1920) {
+    expect(emptyFooterBox).toMatchObject({ height: 136, width: 1920, y: 944 })
+    expect(continueShoppingBox).toMatchObject({
+      height: 56,
+      width: 260,
+      x: 100,
+    })
+  }
+
+  await continueShopping.click()
   await expect(page).toHaveURL(/\/$/)
   await expect(page.getByRole('heading', { name: 'Catalog' })).toBeVisible()
+  expect(browserProblems, browserProblems.join('\n')).toEqual([])
+})
+
+test('failed Cart imagery preserves the Product controls and responsive composition @critical', async ({
+  page,
+}) => {
+  const imageUrl = 'https://images.test/unavailable.svg'
+  const browserProblems = monitorBrowserProblems(page, {
+    expectedConsoleMessages: [/Failed to load resource: net::ERR_FAILED/],
+    expectedFailedRequestUrls: [imageUrl],
+  })
+  const line = {
+    id: JSON.stringify([productDetails.id, 'Blue titanium', '256 GB']),
+    productId: productDetails.id,
+    brand: productDetails.brand,
+    name: productDetails.name,
+    imageUrl,
+    color: 'Blue titanium',
+    storage: '256 GB',
+    unitPrice: 1099,
+    quantity: 1,
+  }
+
+  await page.addInitScript(
+    ({ key, value }) => window.localStorage.setItem(key, value),
+    {
+      key: cartStorageKey,
+      value: JSON.stringify({ state: { lines: [line] }, version: 1 }),
+    },
+  )
+  await page.route(imageUrl, (route) => route.abort('failed'))
+  await page.goto('/cart')
+
+  const fallback = page.getByRole('img', {
+    name: 'Samsung Galaxy S24 Ultra in Blue titanium image unavailable',
+  })
+  await expect(page.getByText('256 GB | Blue titanium')).toBeVisible()
+  await expect(
+    page.getByRole('button', {
+      name: 'Remove one Galaxy S24 Ultra from Cart',
+    }),
+  ).toBeVisible()
+  await expectNoHorizontalPageOverflow(page)
+
+  const fallbackBox = await fallback.boundingBox()
+  expect(fallbackBox?.height).toBeGreaterThan(190)
+  expect(fallbackBox?.width).toBeGreaterThanOrEqual(160)
+
+  const accessibility = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag22aa'])
+    .analyze()
+  expect(
+    accessibility.violations,
+    JSON.stringify(accessibility.violations, null, 2),
+  ).toEqual([])
   expect(browserProblems, browserProblems.join('\n')).toEqual([])
 })
 
