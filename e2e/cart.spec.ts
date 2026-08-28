@@ -7,6 +7,7 @@ const catalogEndpoint =
   /^https:\/\/prueba-tecnica-api-tienda-moviles\.onrender\.com\/products(?:\?.*)?$/
 const detailEndpoint =
   /^https:\/\/prueba-tecnica-api-tienda-moviles\.onrender\.com\/products\/galaxy-s24-ultra$/
+const cartStorageKey = 'mbst-cart'
 
 const productDetails = {
   id: 'galaxy-s24-ultra',
@@ -62,11 +63,34 @@ test('configured Product persists into the responsive Cart without refetching or
 
   await mockProductImage(page)
   await page.route(catalogEndpoint, (route) =>
-    route.fulfill({ json: [], status: 200 }),
+    route.fulfill({
+      json: [
+        {
+          id: productDetails.id,
+          brand: productDetails.brand,
+          name: productDetails.name,
+          basePrice: productDetails.basePrice,
+          imageUrl: productDetails.colorOptions[1].imageUrl,
+        },
+      ],
+      status: 200,
+    }),
   )
   await page.route(detailEndpoint, (route) => {
     detailRequestCount += 1
-    return route.fulfill({ json: productDetails, status: 200 })
+    const detailPrice = detailRequestCount === 1 ? 1199 : 1299
+
+    return route.fulfill({
+      json: {
+        ...productDetails,
+        storageOptions: productDetails.storageOptions.map((storage) =>
+          storage.capacity === '512 GB'
+            ? { ...storage, price: detailPrice }
+            : storage,
+        ),
+      },
+      status: 200,
+    })
   })
 
   await page.goto('/products/galaxy-s24-ultra')
@@ -138,14 +162,38 @@ test('configured Product persists into the responsive Cart without refetching or
     JSON.stringify(accessibility.violations, null, 2),
   ).toEqual([])
 
+  await page.getByRole('link', { name: 'Continue shopping' }).click()
+  await expect(page).toHaveURL(/\/$/)
+  await page
+    .getByRole('link', { name: 'Open Samsung Galaxy S24 Ultra' })
+    .click()
+  await expect(page).toHaveURL(/\/products\/galaxy-s24-ultra$/)
+  await page.getByText('512 GB', { exact: true }).click()
+  await page.getByText('Blue titanium', { exact: true }).click()
+  await expect(page.getByText('1299 EUR', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Add to cart' }).click()
+
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Cart (2)' }),
+  ).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Cart, 2 items' })).toBeVisible()
+  await expect(page.getByText('QTY: 2')).toBeVisible()
+  await expect(page.getByText('1199 EUR')).toBeVisible()
+  await expect(page.getByText('2398 EUR')).toBeVisible()
+  await expect(page.getByRole('status')).toHaveText(
+    'Galaxy S24 Ultra, Blue titanium, 512 GB added to Cart.',
+  )
+
   await page.reload()
 
   await expect(
-    page.getByRole('heading', { level: 1, name: 'Cart (1)' }),
+    page.getByRole('heading', { level: 1, name: 'Cart (2)' }),
   ).toBeVisible()
   await expect(page.getByText('512 GB | Blue titanium')).toBeVisible()
-  await expect(page.getByText('1199 EUR')).toHaveCount(2)
-  expect(detailRequestCount).toBe(1)
+  await expect(page.getByText('QTY: 2')).toBeVisible()
+  await expect(page.getByText('1199 EUR')).toBeVisible()
+  await expect(page.getByText('2398 EUR')).toBeVisible()
+  expect(detailRequestCount).toBe(2)
 
   const restartedContext = await browser.newContext({
     baseURL: 'http://127.0.0.1:4173',
@@ -157,27 +205,67 @@ test('configured Product persists into the responsive Cart without refetching or
   await mockProductImage(restartedPage)
   await restartedPage.goto('/cart')
   await expect(
-    restartedPage.getByRole('heading', { level: 1, name: 'Cart (1)' }),
+    restartedPage.getByRole('heading', { level: 1, name: 'Cart (2)' }),
   ).toBeVisible()
   await expect(restartedPage.getByText('512 GB | Blue titanium')).toBeVisible()
-  await expect(restartedPage.getByText('1199 EUR')).toHaveCount(2)
+  await expect(restartedPage.getByText('QTY: 2')).toBeVisible()
+  await expect(restartedPage.getByText('1199 EUR')).toBeVisible()
+  await expect(restartedPage.getByText('2398 EUR')).toBeVisible()
   expect(restartedBrowserProblems, restartedBrowserProblems.join('\n')).toEqual(
     [],
   )
   await restartedContext.close()
-  expect(detailRequestCount).toBe(1)
+  expect(detailRequestCount).toBe(2)
 
-  await page
-    .getByRole('button', { name: 'Remove one Galaxy S24 Ultra from Cart' })
-    .click()
+  const removeOne = page.getByRole('button', {
+    name: 'Remove one Galaxy S24 Ultra from Cart',
+  })
+  await removeOne.click()
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Cart (1)' }),
+  ).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Cart, 1 item' })).toBeVisible()
+  await expect(page.getByText('QTY: 1')).toBeVisible()
+  await expect(page.getByText('1199 EUR')).toHaveCount(2)
+  await expect(page.getByRole('status')).toHaveText(
+    'Removed one Galaxy S24 Ultra from Cart. 1 unit remains.',
+  )
+
+  await removeOne.click()
   await expect(
     page.getByRole('heading', { level: 1, name: 'Cart (0)' }),
   ).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Cart, 0 items' })).toBeVisible()
   await expect(page.getByRole('listitem')).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Pay' })).toHaveCount(0)
+  await expect(page.getByRole('status')).toHaveText(
+    'Removed Galaxy S24 Ultra from Cart. Cart is empty.',
+  )
 
   await page.getByRole('link', { name: 'Continue shopping' }).click()
   await expect(page).toHaveURL(/\/$/)
   await expect(page.getByRole('heading', { name: 'Catalog' })).toBeVisible()
+  expect(browserProblems, browserProblems.join('\n')).toEqual([])
+})
+
+test('malformed persisted Cart JSON recovers on first boot without browser problems @critical', async ({
+  page,
+}) => {
+  const browserProblems = monitorBrowserProblems(page)
+  await page.addInitScript(
+    ({ key, value }) => window.localStorage.setItem(key, value),
+    { key: cartStorageKey, value: '{not-json' },
+  )
+
+  await page.goto('/cart')
+
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Cart (0)' }),
+  ).toBeVisible()
+  await expect(page.getByRole('listitem')).toHaveCount(0)
+  await expect(
+    page.getByRole('link', { name: 'Continue shopping' }),
+  ).toBeVisible()
+
   expect(browserProblems, browserProblems.join('\n')).toEqual([])
 })

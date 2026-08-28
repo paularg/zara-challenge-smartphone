@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   CART_STORAGE_KEY,
@@ -111,7 +111,6 @@ describe('Cart store', () => {
   })
 
   it.each([
-    ['corrupt JSON', '{not-json'],
     [
       'an incompatible version',
       JSON.stringify({
@@ -136,5 +135,18 @@ describe('Cart store', () => {
     await useCartStore.persist.rehydrate()
 
     expect(useCartStore.getState().lines).toEqual([])
+  })
+
+  it('replaces malformed persisted JSON with an empty Cart without a console warning', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    useCartStore.getState().addLine(galaxyVariant())
+    window.localStorage.setItem(CART_STORAGE_KEY, '{not-json')
+
+    await useCartStore.persist.rehydrate()
+
+    expect(useCartStore.getState().lines).toEqual([])
+    expect(consoleError).not.toHaveBeenCalled()
+    expect(consoleWarn).not.toHaveBeenCalled()
   })
 })
