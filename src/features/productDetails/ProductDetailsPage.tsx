@@ -160,6 +160,7 @@ const ProductContent = ({
     hoveredColorIndex === null
       ? selectedColor
       : product.colorOptions[hoveredColorIndex]
+  const colorName = visibleColor ?? product.colorOptions[0]
   const hasStorageConfigurations = product.storageOptions.length > 0
 
   const handleCarouselKeyDown = (
@@ -286,14 +287,16 @@ const ProductContent = ({
                         </div>
                       )
                     })}
-                    {visibleColor ? (
-                      <p
-                        aria-hidden="true"
-                        className="pointer-events-none absolute top-8 left-0 m-0 text-xs leading-[normal] font-light whitespace-nowrap"
-                      >
-                        {visibleColor.name}
-                      </p>
-                    ) : null}
+                    <p
+                      aria-hidden="true"
+                      className={`pointer-events-none absolute top-8 left-0 m-0 text-xs leading-[normal] font-light whitespace-nowrap transition-[opacity,transform] duration-300 ease-out motion-reduce:duration-0 ${
+                        visibleColor
+                          ? 'translate-y-0 opacity-100'
+                          : 'translate-y-0.5 opacity-0'
+                      }`}
+                    >
+                      {colorName.name}
+                    </p>
                   </div>
                 </fieldset>
               </div>
