@@ -11,6 +11,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { ProductDetailsPage } from './ProductDetailsPage'
+import { withoutScreenRefreshRate } from './productDetailsTestFixtures'
 
 const productDetailsPayload = (
   id = 'galaxy-s24-ultra',
@@ -153,9 +154,7 @@ describe('Product detail route', () => {
   })
 
   it('renders available Product specifications without inventing an omitted optional row', async () => {
-    const completeSpecs = productDetailsPayload().specs
-    const partialSpecs: Partial<typeof completeSpecs> = { ...completeSpecs }
-    delete partialSpecs.screenRefreshRate
+    const partialSpecs = withoutScreenRefreshRate(productDetailsPayload().specs)
     vi.stubEnv('API_KEY', 'test-key')
     vi.stubGlobal(
       'fetch',

@@ -4,6 +4,7 @@ import {
   fetchProductDetails,
   normalizeProductDetails,
 } from './productDetailsService'
+import { withoutScreenRefreshRate } from './productDetailsTestFixtures'
 
 const productDetailsPayload = {
   id: 'galaxy-s24-ultra',
@@ -76,10 +77,7 @@ describe('Product detail API boundary', () => {
   })
 
   it('keeps available specifications when an optional specification is omitted', () => {
-    const partialSpecs: Partial<typeof productDetailsPayload.specs> = {
-      ...productDetailsPayload.specs,
-    }
-    delete partialSpecs.screenRefreshRate
+    const partialSpecs = withoutScreenRefreshRate(productDetailsPayload.specs)
 
     expect(
       normalizeProductDetails({
