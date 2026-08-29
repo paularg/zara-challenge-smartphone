@@ -10,14 +10,14 @@ export type ProductSummary = {
 }
 
 export type ProductSpecs = {
-  screen: string
-  resolution: string
-  processor: string
-  mainCamera: string
-  selfieCamera: string
-  battery: string
-  os: string
-  screenRefreshRate: string
+  screen?: string
+  resolution?: string
+  processor?: string
+  mainCamera?: string
+  selfieCamera?: string
+  battery?: string
+  os?: string
+  screenRefreshRate?: string
 }
 
 export type ProductDetails = {
@@ -92,8 +92,29 @@ const specsKeys = [
   'screenRefreshRate',
 ] as const
 
-const isProductSpecs = (value: unknown): value is ProductSpecs =>
-  isRecord(value) && specsKeys.every((key) => isNonEmptyString(value[key]))
+const normalizeProductSpecs = (value: unknown): ProductSpecs | null => {
+  if (!isRecord(value)) {
+    return null
+  }
+
+  const specs: ProductSpecs = {}
+
+  for (const key of specsKeys) {
+    const specification = value[key]
+
+    if (specification === undefined) {
+      continue
+    }
+
+    if (!isNonEmptyString(specification)) {
+      return null
+    }
+
+    specs[key] = specification
+  }
+
+  return specs
+}
 
 const isProductSummary = (value: unknown): value is ProductSummary =>
   isRecord(value) &&
@@ -106,6 +127,8 @@ const isProductSummary = (value: unknown): value is ProductSummary =>
 export const normalizeProductDetails = (
   payload: unknown,
 ): ProductDetailsResult => {
+  const specs = isRecord(payload) ? normalizeProductSpecs(payload.specs) : null
+
   if (
     !isRecord(payload) ||
     !isNonEmptyString(payload.id) ||
@@ -113,7 +136,7 @@ export const normalizeProductDetails = (
     !isNonEmptyString(payload.name) ||
     !isNonEmptyString(payload.description) ||
     !isFiniteNumber(payload.basePrice) ||
-    !isProductSpecs(payload.specs) ||
+    specs === null ||
     !Array.isArray(payload.colorOptions) ||
     !payload.colorOptions.every(
       (color) =>
@@ -144,16 +167,7 @@ export const normalizeProductDetails = (
       name: payload.name,
       description: payload.description,
       basePrice: payload.basePrice,
-      specs: {
-        screen: payload.specs.screen,
-        resolution: payload.specs.resolution,
-        processor: payload.specs.processor,
-        mainCamera: payload.specs.mainCamera,
-        selfieCamera: payload.specs.selfieCamera,
-        battery: payload.specs.battery,
-        os: payload.specs.os,
-        screenRefreshRate: payload.specs.screenRefreshRate,
-      },
+      specs,
       colorOptions: payload.colorOptions.map((color) => ({
         name: color.name,
         hexCode: color.hexCode,

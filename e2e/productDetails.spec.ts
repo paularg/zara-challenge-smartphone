@@ -196,6 +196,57 @@ test('direct Product detail preserves the reference composition and accessible r
   expect(browserProblems, browserProblems.join('\n')).toEqual([])
 })
 
+test('unavailable Product configuration stays responsive and keyboard accessible @critical', async ({
+  page,
+}) => {
+  const browserProblems = monitorBrowserProblems(page)
+
+  await mockProductImages(page)
+  await page.route(catalogEndpoint, (route) =>
+    route.fulfill({ json: [], status: 200 }),
+  )
+  await page.route(detailEndpoint, (route) =>
+    route.fulfill({
+      json: productDetailsPayload('unavailable-configuration', {
+        storageOptions: [],
+      }),
+      status: 200,
+    }),
+  )
+
+  await page.goto('/products/unavailable-configuration')
+
+  await expect(page.getByRole('status')).toContainText(
+    'This Product has no storage configurations available.',
+  )
+  await expectNoHorizontalPageOverflow(page)
+
+  const recoveryAction = page.getByRole('button', { name: 'Browse Products' })
+  await pressNextTabStop(page)
+  await expect(page.getByText('Skip to content')).toBeFocused()
+  await pressNextTabStop(page)
+  await expect(page.getByRole('link', { name: 'MBST home' })).toBeFocused()
+  await pressNextTabStop(page)
+  await expect(page.getByRole('link', { name: 'Cart, 0 items' })).toBeFocused()
+  await pressNextTabStop(page)
+  await expect(page.getByRole('button', { name: 'Back' })).toBeFocused()
+  await pressNextTabStop(page)
+  await expect(recoveryAction).toBeFocused()
+
+  const accessibility = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag22aa'])
+    .analyze()
+  expect(
+    accessibility.violations,
+    JSON.stringify(accessibility.violations, null, 2),
+  ).toEqual([])
+
+  await recoveryAction.press('Enter')
+  await expect(page).toHaveURL(/\/$/)
+  await expect(page.getByRole('heading', { name: 'Catalog' })).toBeVisible()
+  expect(browserProblems, browserProblems.join('\n')).toEqual([])
+})
+
 test('Product variant configuration works by pointer and keyboard without extra requests @critical', async ({
   page,
 }) => {

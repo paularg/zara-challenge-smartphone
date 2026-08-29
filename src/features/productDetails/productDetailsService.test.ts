@@ -4,6 +4,7 @@ import {
   fetchProductDetails,
   normalizeProductDetails,
 } from './productDetailsService'
+import { withoutScreenRefreshRate } from './productDetailsTestFixtures'
 
 const productDetailsPayload = {
   id: 'galaxy-s24-ultra',
@@ -71,6 +72,63 @@ describe('Product detail API boundary', () => {
             imageUrl: 'https://images.example.com/iphone.png',
           },
         ],
+      },
+    })
+  })
+
+  it('keeps available specifications when an optional specification is omitted', () => {
+    const partialSpecs = withoutScreenRefreshRate(productDetailsPayload.specs)
+
+    expect(
+      normalizeProductDetails({
+        ...productDetailsPayload,
+        specs: partialSpecs,
+      }),
+    ).toEqual(
+      expect.objectContaining({
+        status: 'success',
+        product: expect.objectContaining({ specs: partialSpecs }),
+      }),
+    )
+  })
+
+  it('accepts a Product with no storage configurations at the transport boundary', () => {
+    expect(
+      normalizeProductDetails({
+        ...productDetailsPayload,
+        storageOptions: [],
+      }),
+    ).toEqual(
+      expect.objectContaining({
+        status: 'success',
+        product: expect.objectContaining({ storageOptions: [] }),
+      }),
+    )
+  })
+
+  it.each([
+    ['identity', { id: '' }],
+    ['variant selection', { colorOptions: [] }],
+    [
+      'imagery',
+      {
+        colorOptions: [
+          {
+            ...productDetailsPayload.colorOptions[0],
+            imageUrl: '',
+          },
+        ],
+      },
+    ],
+    ['pricing', { basePrice: Number.NaN }],
+  ])('rejects an invalid required %s field', (_field, overrides) => {
+    expect(
+      normalizeProductDetails({ ...productDetailsPayload, ...overrides }),
+    ).toEqual({
+      status: 'error',
+      error: {
+        kind: 'invalid-payload',
+        message: 'The Product detail response is invalid.',
       },
     })
   })
