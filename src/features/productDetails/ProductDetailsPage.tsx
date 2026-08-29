@@ -104,7 +104,7 @@ const LoadingProduct = () => (
       <div className="bg-disabled h-[273px] w-[260px] md:h-[416px] md:w-[337px] xl:h-[630px] xl:w-[510px]" />
       <div className="flex flex-col gap-3 md:pt-7 xl:pt-[85px]">
         <h1
-          className="m-0 text-xl leading-[1.2] font-light uppercase xl:text-2xl"
+          className="m-0 text-2xl leading-[1.2] font-light uppercase"
           id="product-heading"
         >
           Loading Product
@@ -182,14 +182,14 @@ const ProductContent = ({
         <div className="flex min-w-0 flex-col gap-10 xl:gap-16">
           <div className="flex flex-col gap-[11px]">
             <h1
-              className="m-0 text-xl leading-[1.2] font-light uppercase xl:text-2xl"
+              className="m-0 text-2xl leading-[1.2] font-light uppercase"
               id="product-heading"
               ref={headingRef}
               tabIndex={-1}
             >
               {product.name}
             </h1>
-            <p className="m-0 text-sm leading-[1.2] font-light xl:text-xl">
+            <p className="m-0 text-xl leading-[1.2] font-light">
               {selectedStorage
                 ? `${selectedStorage.price} EUR`
                 : `From ${product.basePrice} EUR`}
@@ -447,7 +447,7 @@ export const ProductDetailsPage = ({
         <div className="mx-auto flex min-h-[344px] w-full max-w-[1200px] flex-col items-start justify-center gap-6 border-y-[0.5px] px-4 py-10 md:w-[calc(100%-80px)] md:max-w-[754px] md:px-0 xl:w-[1200px] xl:max-w-[1200px]">
           <div className="flex flex-col gap-2" role="alert">
             <h1
-              className="m-0 text-xl leading-[1.2] font-light uppercase"
+              className="m-0 text-2xl leading-[1.2] font-light uppercase"
               id="product-error-heading"
             >
               {state.error.kind === 'not-found'

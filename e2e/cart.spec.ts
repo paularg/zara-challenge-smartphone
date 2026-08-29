@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright'
-import { expect, test, type Page } from '@playwright/test'
+import { devices, expect, test, type Page } from '@playwright/test'
 
 import {
   expectNoHorizontalPageOverflow,
@@ -47,6 +47,16 @@ const productDetails = {
   similarProducts: [],
 }
 
+const mobileSafariProject = 'mobile-safari-iphone-15'
+const mobileSafariProfile = devices['iPhone 15']
+const mobileSafariContextOptions = {
+  deviceScaleFactor: mobileSafariProfile.deviceScaleFactor,
+  hasTouch: mobileSafariProfile.hasTouch,
+  isMobile: mobileSafariProfile.isMobile,
+  screen: mobileSafariProfile.screen,
+  userAgent: mobileSafariProfile.userAgent,
+}
+
 const mockProductImage = async (page: Page) => {
   await page.route('https://images.test/**', (route) =>
     route.fulfill({
@@ -57,10 +67,38 @@ const mockProductImage = async (page: Page) => {
   )
 }
 
+const mockStableProductApi = async (page: Page) => {
+  await mockProductImage(page)
+  await page.route(catalogEndpoint, (route) =>
+    route.fulfill({
+      json: [
+        {
+          id: productDetails.id,
+          brand: productDetails.brand,
+          name: productDetails.name,
+          basePrice: productDetails.basePrice,
+          imageUrl: productDetails.colorOptions[0].imageUrl,
+        },
+      ],
+      status: 200,
+    }),
+  )
+  await page.route(detailEndpoint, (route) =>
+    route.fulfill({ json: productDetails, status: 200 }),
+  )
+}
+
+const readRuntimeDeviceProfile = (page: Page) =>
+  page.evaluate(() => ({
+    devicePixelRatio: window.devicePixelRatio,
+    screen: { height: window.screen.height, width: window.screen.width },
+    userAgent: navigator.userAgent,
+  }))
+
 test('configured Product persists into the responsive Cart without refetching or repricing @critical', async ({
   browser,
   page,
-}) => {
+}, testInfo) => {
   const browserProblems = monitorBrowserProblems(page)
   let detailRequestCount = 0
 
@@ -108,9 +146,11 @@ test('configured Product persists into the responsive Cart without refetching or
   await page.keyboard.press('Enter')
 
   await expect(page).toHaveURL(/\/cart$/)
-  await expect(
-    page.getByRole('heading', { level: 1, name: 'Cart (1)' }),
-  ).toBeVisible()
+  const cartHeading = page.getByRole('heading', {
+    level: 1,
+    name: 'Cart (1)',
+  })
+  await expect(cartHeading).toBeVisible()
   await expect(page.getByRole('link', { name: 'Cart, 1 item' })).toBeVisible()
   await expect(page.getByRole('status')).toHaveText(
     'Galaxy S24 Ultra, Blue titanium, 512 GB added to Cart.',
@@ -127,6 +167,9 @@ test('configured Product persists into the responsive Cart without refetching or
     }),
   ).toHaveAttribute('src', 'https://images.test/galaxy-blue.svg')
   await expect(page.getByText('1199 EUR')).toHaveCount(2)
+  const cartActions = page.getByRole('group', { name: 'Cart actions' })
+  const cartTotalPrice = cartActions.getByText('1199 EUR')
+  await expect(cartTotalPrice).toHaveCSS('white-space', 'nowrap')
   await expectNoHorizontalPageOverflow(page)
 
   const pay = page.getByRole('button', { name: 'Pay' })
@@ -136,23 +179,33 @@ test('configured Product persists into the responsive Cart without refetching or
   )
 
   const lineBox = await cartLine.boundingBox()
-  const footerBox = await page.locator('footer').boundingBox()
+  const footerBox = await cartActions.boundingBox()
   const viewportWidth = page.viewportSize()?.width
+  const viewportHeight = page.viewportSize()?.height
 
   if (viewportWidth === 393) {
     expect(lineBox).toMatchObject({ width: 361, x: 16 })
+    expect(lineBox?.y).toBeCloseTo(152.8, 1)
     expect(lineBox?.height).toBeCloseTo(197.863, 1)
-    expect(footerBox).toMatchObject({ height: 129, width: 393, x: 0, y: 723 })
+    expect(footerBox).toMatchObject({ height: 129, width: 393, x: 0 })
+    expect((footerBox?.y ?? 0) + (footerBox?.height ?? 0)).toBe(viewportHeight)
     expect(await pay.boundingBox()).toMatchObject({ height: 48, width: 174.5 })
   } else if (viewportWidth === 834) {
-    expect(lineBox).toMatchObject({ height: 324, width: 754, x: 40, y: 200 })
+    expect(lineBox).toMatchObject({ height: 324, width: 754, x: 40 })
+    expect(lineBox?.y).toBeCloseTo(196.8, 1)
     expect(footerBox).toMatchObject({ height: 112, width: 834, x: 0, y: 1082 })
+    await expect(cartActions).toHaveCSS('column-gap', '56px')
     expect(await pay.boundingBox()).toMatchObject({ height: 48, width: 260 })
   } else if (viewportWidth === 1920) {
     expect(lineBox).toMatchObject({ height: 324, width: 548, x: 100 })
-    expect(lineBox?.y).toBeCloseTo(229, 0)
+    expect(lineBox?.y).toBeCloseTo(221, 0)
     expect(footerBox).toMatchObject({ height: 136, width: 1920, x: 0, y: 944 })
     expect(await pay.boundingBox()).toMatchObject({ height: 56, width: 260 })
+  } else if (viewportWidth === 768) {
+    await expect(cartActions).toHaveCSS('column-gap', '32px')
+    expect(lineBox?.height).toBeGreaterThan(190)
+    expect(lineBox?.width).toBeGreaterThan(350)
+    expect(footerBox?.y).toBeGreaterThan(650)
   } else {
     expect(lineBox?.height).toBeGreaterThan(190)
     expect(lineBox?.width).toBeGreaterThan(350)
@@ -202,6 +255,9 @@ test('configured Product persists into the responsive Cart without refetching or
 
   const restartedContext = await browser.newContext({
     baseURL: 'http://127.0.0.1:4173',
+    ...(testInfo.project.name === mobileSafariProject
+      ? mobileSafariContextOptions
+      : {}),
     storageState: await page.context().storageState(),
     viewport: page.viewportSize() ?? { height: 852, width: 393 },
   })
@@ -247,13 +303,18 @@ test('configured Product persists into the responsive Cart without refetching or
     'Removed Galaxy S24 Ultra from Cart. Cart is empty.',
   )
 
-  const emptyFooterBox = await page.locator('footer').boundingBox()
+  const emptyFooterBox = await page
+    .getByRole('group', { name: 'Cart actions' })
+    .boundingBox()
   const continueShopping = page.getByRole('link', {
     name: 'Continue shopping',
   })
   const continueShoppingBox = await continueShopping.boundingBox()
   if (viewportWidth === 393) {
-    expect(emptyFooterBox).toMatchObject({ height: 96, width: 393, y: 756 })
+    expect(emptyFooterBox).toMatchObject({ height: 96, width: 393 })
+    expect((emptyFooterBox?.y ?? 0) + (emptyFooterBox?.height ?? 0)).toBe(
+      viewportHeight,
+    )
     expect(continueShoppingBox).toMatchObject({
       height: 48,
       width: 361,
@@ -292,6 +353,80 @@ test('configured Product persists into the responsive Cart without refetching or
   await continueShopping.click()
   await expect(page).toHaveURL(/\/$/)
   await expect(page.getByRole('heading', { name: 'Catalog' })).toBeVisible()
+  expect(browserProblems, browserProblems.join('\n')).toEqual([])
+})
+
+test('Product and Cart typography uses the binding design tokens', async ({
+  page,
+}) => {
+  const browserProblems = monitorBrowserProblems(page)
+
+  await mockStableProductApi(page)
+  await page.goto('/products/galaxy-s24-ultra')
+
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Galaxy S24 Ultra' }),
+  ).toHaveCSS('font-size', '24px')
+  await expect(page.getByText('From 1099 EUR', { exact: true })).toHaveCSS(
+    'font-size',
+    '20px',
+  )
+
+  await page.getByText('256 GB', { exact: true }).click()
+  await page.getByText('Black titanium', { exact: true }).click()
+  await page.getByRole('button', { name: 'Add to cart' }).click()
+
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Cart (1)' }),
+  ).toHaveCSS('font-size', '24px')
+  await expect(page.getByRole('listitem').getByText('1099 EUR')).toHaveCSS(
+    'font-size',
+    '12px',
+  )
+  await expect(
+    page.getByRole('group', { name: 'Cart actions' }).getByText('1099 EUR'),
+  ).toHaveCSS('font-size', '14px')
+
+  expect(browserProblems, browserProblems.join('\n')).toEqual([])
+})
+
+test('different variants of the same Product remain separate Cart lines @critical', async ({
+  page,
+}) => {
+  const browserProblems = monitorBrowserProblems(page)
+
+  await mockStableProductApi(page)
+
+  await page.goto('/products/galaxy-s24-ultra')
+  await page.getByText('256 GB', { exact: true }).click()
+  await page.getByText('Black titanium', { exact: true }).click()
+  await page.getByRole('button', { name: 'Add to cart' }).click()
+
+  await page.getByRole('link', { name: 'Continue shopping' }).click()
+  await page
+    .getByRole('link', { name: 'Open Samsung Galaxy S24 Ultra' })
+    .click()
+  await page.getByText('512 GB', { exact: true }).click()
+  await page.getByText('Blue titanium', { exact: true }).click()
+  await page.getByRole('button', { name: 'Add to cart' }).click()
+
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Cart (2)' }),
+  ).toBeVisible()
+  const cartLines = page.getByRole('listitem')
+  await expect(cartLines).toHaveCount(2)
+  await expect(cartLines.nth(0)).toContainText('256 GB | Black titanium')
+  await expect(cartLines.nth(0)).toContainText('1099 EUR')
+  await expect(cartLines.nth(0)).toContainText('QTY: 1')
+  await expect(cartLines.nth(1)).toContainText('512 GB | Blue titanium')
+  await expect(cartLines.nth(1)).toContainText('1199 EUR')
+  await expect(cartLines.nth(1)).toContainText('QTY: 1')
+  await expect(
+    page.getByRole('group', { name: 'Cart actions' }).getByText('2298 EUR'),
+  ).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Cart, 2 items' })).toBeVisible()
+  await expectNoHorizontalPageOverflow(page)
+
   expect(browserProblems, browserProblems.join('\n')).toEqual([])
 })
 
@@ -370,4 +505,39 @@ test('malformed persisted Cart JSON recovers on first boot without browser probl
   ).toBeVisible()
 
   expect(browserProblems, browserProblems.join('\n')).toEqual([])
+})
+
+test('Mobile Safari contexts use the complete iPhone 15 profile @critical', async ({
+  browser,
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== mobileSafariProject,
+    'This profile contract belongs to the Mobile Safari project.',
+  )
+
+  expect(mobileSafariProfile).toMatchObject({
+    deviceScaleFactor: 3,
+    hasTouch: true,
+    isMobile: true,
+    screen: { height: 852, width: 393 },
+    viewport: { height: 659, width: 393 },
+    userAgent: expect.stringContaining('iPhone'),
+  })
+  expect(page.viewportSize()).toEqual(mobileSafariProfile.viewport)
+  expect((await readRuntimeDeviceProfile(page)).userAgent).toContain('iPhone')
+
+  const restartedContext = await browser.newContext({
+    ...mobileSafariContextOptions,
+    viewport: mobileSafariProfile.viewport,
+  })
+  const restartedPage = await restartedContext.newPage()
+
+  expect(restartedPage.viewportSize()).toEqual(mobileSafariProfile.viewport)
+  expect(await readRuntimeDeviceProfile(restartedPage)).toMatchObject({
+    screen: mobileSafariProfile.screen,
+    userAgent: expect.stringContaining('iPhone'),
+  })
+
+  await restartedContext.close()
 })

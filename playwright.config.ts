@@ -1,4 +1,4 @@
-import { defineConfig } from '@playwright/test'
+import { defineConfig, devices } from '@playwright/test'
 
 const baseURL = 'http://127.0.0.1:4173'
 
@@ -47,14 +47,23 @@ export default defineConfig({
       },
     },
     {
+      name: 'edge-mobile-393',
+      grep: /@critical/,
+      use: {
+        browserName: 'chromium',
+        channel: 'msedge',
+        viewport: { width: 393, height: 852 },
+      },
+    },
+    {
       name: 'firefox-mobile-393',
       grep: /@critical/,
       use: { browserName: 'firefox', viewport: { width: 393, height: 852 } },
     },
     {
-      name: 'webkit-mobile-393',
+      name: 'mobile-safari-iphone-15',
       grep: /@critical/,
-      use: { browserName: 'webkit', viewport: { width: 393, height: 852 } },
+      use: { ...devices['iPhone 15'] },
     },
   ],
   webServer: {
