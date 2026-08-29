@@ -196,58 +196,42 @@ test('direct Product detail preserves the reference composition and accessible r
   expect(browserProblems, browserProblems.join('\n')).toEqual([])
 })
 
-test('partial specifications and unavailable configurations remain actionable @critical', async ({
+test('unavailable Product configuration stays responsive and keyboard accessible @critical', async ({
   page,
 }) => {
   const browserProblems = monitorBrowserProblems(page)
-  const partialSpecs = Object.fromEntries(
-    Object.entries(productDetailsPayload().specs).filter(
-      ([key]) => key !== 'screenRefreshRate',
-    ),
-  )
 
   await mockProductImages(page)
   await page.route(catalogEndpoint, (route) =>
     route.fulfill({ json: [], status: 200 }),
   )
-  await page.route(detailEndpoint, (route) => {
-    const productId = new URL(route.request().url()).pathname.split('/').at(-1)
-
-    return route.fulfill({
-      json:
-        productId === 'partial-specifications'
-          ? productDetailsPayload('partial-specifications', {
-              specs: partialSpecs,
-            })
-          : productDetailsPayload('unavailable-configuration', {
-              storageOptions: [],
-            }),
+  await page.route(detailEndpoint, (route) =>
+    route.fulfill({
+      json: productDetailsPayload('unavailable-configuration', {
+        storageOptions: [],
+      }),
       status: 200,
-    })
-  })
-
-  await page.goto('/products/partial-specifications')
-
-  await expect(
-    page.getByRole('heading', { level: 1, name: 'Galaxy S24 Ultra' }),
-  ).toBeVisible()
-  const specifications = page.getByRole('table', {
-    name: 'Product specifications',
-  })
-  await expect(specifications.getByText('6.8-inch AMOLED')).toBeVisible()
-  await expect(specifications.getByText('Screen refresh rate')).toHaveCount(0)
-  await expect(specifications.getByText('120 Hz')).toHaveCount(0)
+    }),
+  )
 
   await page.goto('/products/unavailable-configuration')
 
   await expect(page.getByRole('status')).toContainText(
     'This Product has no storage configurations available.',
   )
-  await expect(page.getByRole('group', { name: 'Storage' })).toHaveCount(0)
-  await expect(page.getByRole('group', { name: 'Color' })).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'Add to cart' })).toHaveCount(0)
+  await expectNoHorizontalPageOverflow(page)
+
   const recoveryAction = page.getByRole('button', { name: 'Browse Products' })
-  await expect(recoveryAction).toBeVisible()
+  await pressNextTabStop(page)
+  await expect(page.getByText('Skip to content')).toBeFocused()
+  await pressNextTabStop(page)
+  await expect(page.getByRole('link', { name: 'MBST home' })).toBeFocused()
+  await pressNextTabStop(page)
+  await expect(page.getByRole('link', { name: 'Cart, 0 items' })).toBeFocused()
+  await pressNextTabStop(page)
+  await expect(page.getByRole('button', { name: 'Back' })).toBeFocused()
+  await pressNextTabStop(page)
+  await expect(recoveryAction).toBeFocused()
 
   const accessibility = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag22aa'])
@@ -257,7 +241,7 @@ test('partial specifications and unavailable configurations remain actionable @c
     JSON.stringify(accessibility.violations, null, 2),
   ).toEqual([])
 
-  await recoveryAction.click()
+  await recoveryAction.press('Enter')
   await expect(page).toHaveURL(/\/$/)
   await expect(page.getByRole('heading', { name: 'Catalog' })).toBeVisible()
   expect(browserProblems, browserProblems.join('\n')).toEqual([])

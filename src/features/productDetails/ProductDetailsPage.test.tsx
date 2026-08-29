@@ -153,11 +153,9 @@ describe('Product detail route', () => {
   })
 
   it('renders available Product specifications without inventing an omitted optional row', async () => {
-    const partialSpecs = Object.fromEntries(
-      Object.entries(productDetailsPayload().specs).filter(
-        ([key]) => key !== 'screenRefreshRate',
-      ),
-    )
+    const completeSpecs = productDetailsPayload().specs
+    const partialSpecs: Partial<typeof completeSpecs> = { ...completeSpecs }
+    delete partialSpecs.screenRefreshRate
     vi.stubEnv('API_KEY', 'test-key')
     vi.stubGlobal(
       'fetch',

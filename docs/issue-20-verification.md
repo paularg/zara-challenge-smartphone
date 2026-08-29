@@ -19,7 +19,7 @@ The Playwright process printed a tooling-only warning that `NO_COLOR` was ignore
 
 Transport-boundary tests now cover a partial `specs` object, invalid Product identity, variant-selection, image, and price fields, and an empty `storageOptions` array. Product-detail integration tests cover the visible partial-specification and unavailable-configuration results.
 
-The Playwright journey runs at the configured 393 px, 768 px, 834 px, 1280 px, and 1920 px Chromium viewports and at 393 px in branded Chrome, Firefox, and WebKit. It verifies that an omitted specification does not produce a row, that an empty storage list produces an accessible explanation and Browse Products action, that no incomplete Product variant can be added, and that Axe reports no WCAG 2.2 A/AA violations in the new state. Browser-problem monitoring found no unexpected console messages, page errors, error responses, or failed requests.
+The Playwright journey runs at the configured 393 px, 768 px, 834 px, 1280 px, and 1920 px Chromium viewports and at 393 px in branded Chrome, Firefox, and WebKit. It verifies that the unavailable state has no horizontal overflow, exposes Browse Products in the expected keyboard order with visible focus, supports keyboard recovery, and produces no Axe WCAG 2.2 A/AA violations. Browser-problem monitoring found no unexpected console messages, page errors, error responses, or failed requests. Faster integration tests own the semantic assertions for partial specifications, unavailable selectors, blocked Cart entry, and navigation outcomes.
 
 ## Live `APL-IP13-128` journey
 

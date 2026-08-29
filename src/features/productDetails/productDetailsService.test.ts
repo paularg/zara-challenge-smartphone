@@ -76,11 +76,10 @@ describe('Product detail API boundary', () => {
   })
 
   it('keeps available specifications when an optional specification is omitted', () => {
-    const partialSpecs = Object.fromEntries(
-      Object.entries(productDetailsPayload.specs).filter(
-        ([key]) => key !== 'screenRefreshRate',
-      ),
-    )
+    const partialSpecs: Partial<typeof productDetailsPayload.specs> = {
+      ...productDetailsPayload.specs,
+    }
+    delete partialSpecs.screenRefreshRate
 
     expect(
       normalizeProductDetails({
