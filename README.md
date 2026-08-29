@@ -48,7 +48,7 @@ The repository exposes each delivery gate independently:
 Install the browser binaries before the first local end-to-end run if they are not already available:
 
 ```bash
-pnpm exec playwright install chromium chrome firefox webkit
+pnpm exec playwright install chromium chrome msedge firefox webkit
 ```
 
 ## Feature boundaries and public data flow
@@ -115,11 +115,11 @@ Vitest replaces the external `fetch` boundary with explicit fixtures. Playwright
 
 The target is WCAG 2.2 AA. The implementation uses semantic landmarks and controls, accessible names and state, keyboard-operable Search and Product options, visible focus, a skip link, polite announcements, useful image alternatives, sufficient contrast, and reduced-motion handling. Automated Playwright journeys include axe-core checks, keyboard interaction, browser-console monitoring, and unexpected failed-request monitoring.
 
-The canonical Figma-derived viewports are 393 × 852, 834 × 1194, and 1920 × 1080. Playwright also checks 768 × 1024 and 1280 × 800 to protect transitions between the mobile, tablet, and desktop compositions. Critical mobile journeys run in Chromium, Google Chrome, Firefox, and Safari-compatible WebKit. `DESIGN.md` owns the design system; the linked Figma frames own screen composition.
+The canonical Figma-derived viewports are 393 × 852, 834 × 1194, and 1920 × 1080. Playwright also checks 768 × 1024 and 1280 × 800 to protect transitions between the mobile, tablet, and desktop compositions. Critical journeys run in bundled Chromium and Firefox, current Google Chrome and Microsoft Edge through their branded channels, and Safari-compatible WebKit with Playwright's complete iPhone 15 Mobile Safari profile. The iPhone profile supplies its mobile user agent, touch support, device scale, screen, and browser viewport instead of simulating Safari with a desktop context resized to 393 px. `DESIGN.md` owns the design system; the linked Figma frames own screen composition.
 
 ## Continuous integration
 
-`.github/workflows/quality.yml` installs dependencies from `pnpm-lock.yaml` with `--frozen-lockfile` and runs Prettier, ESLint, TypeScript plus the production build, Vitest, and Playwright as independent jobs. CI supplies a non-secret placeholder `API_KEY` because every automated external request is deterministic. The workflow uploads the Playwright report for diagnosis and performs no deployment.
+`.github/workflows/quality.yml` installs dependencies from `pnpm-lock.yaml` with `--frozen-lockfile` and runs Prettier, ESLint, TypeScript plus the production build, Vitest, and Playwright as independent jobs. The end-to-end job deterministically installs bundled Chromium, Firefox, and WebKit plus the branded Chrome and Edge channels before running the complete configured matrix. CI supplies a non-secret placeholder `API_KEY` because every automated external request is deterministic. The workflow uploads the Playwright report for diagnosis and performs no deployment.
 
 ## Outside scope
 

@@ -90,7 +90,7 @@ type CartTotalProps = {
 }
 
 const CartTotal = ({ total }: CartTotalProps) => (
-  <div className="order-1 col-span-2 flex items-center justify-between gap-6 text-sm leading-4 font-normal uppercase md:order-2 md:col-span-1 md:col-start-3">
+  <div className="order-1 col-span-2 flex items-center justify-between gap-6 text-sm leading-4 font-normal whitespace-nowrap uppercase md:order-2 md:col-span-1 md:col-start-3">
     <span>Total</span>
     <span>{formatPrice(total)}</span>
   </div>
@@ -120,13 +120,21 @@ const PayButton = () => (
 )
 
 const EmptyCartFooter = () => (
-  <footer className="bg-background mt-auto flex h-24 shrink-0 items-center px-4 py-6 md:h-28 md:px-10 md:pt-6 md:pb-10 xl:h-[136px] xl:px-[100px] xl:pt-6 xl:pb-14">
+  <footer
+    aria-label="Cart actions"
+    className="bg-background mt-auto flex h-24 shrink-0 items-center px-4 py-6 md:h-28 md:px-10 md:pt-6 md:pb-10 xl:h-[136px] xl:px-[100px] xl:pt-6 xl:pb-14"
+    role="group"
+  >
     <ContinueShoppingButton />
   </footer>
 )
 
 const FilledCartFooter = ({ total }: CartTotalProps) => (
-  <footer className="bg-background mt-auto grid h-[129px] shrink-0 grid-cols-2 items-center gap-x-3 gap-y-6 px-4 pt-4 pb-6 md:h-28 md:grid-cols-[200px_1fr_auto_260px] md:gap-x-14 md:gap-y-0 md:px-10 md:pt-6 md:pb-10 xl:h-[136px] xl:grid-cols-[260px_1fr_auto_260px] xl:gap-x-20 xl:px-[100px] xl:pt-6 xl:pb-14">
+  <footer
+    aria-label="Cart actions"
+    className="bg-background mt-auto grid h-[129px] shrink-0 grid-cols-2 items-center gap-x-3 gap-y-6 px-4 pt-4 pb-6 min-[834px]:!gap-x-14 md:h-28 md:grid-cols-[200px_1fr_auto_260px] md:gap-x-8 md:gap-y-0 md:px-10 md:pt-6 md:pb-10 xl:h-[136px] xl:grid-cols-[260px_1fr_auto_260px] xl:!gap-x-20 xl:px-[100px] xl:pt-6 xl:pb-14"
+    role="group"
+  >
     <CartTotal total={total} />
     <ContinueShoppingButton />
     <PayButton />
@@ -160,10 +168,10 @@ export const CartPage = () => {
     <div className="flex min-h-[calc(100svh-80px)] flex-col">
       <section
         aria-labelledby="cart-heading"
-        className="flex flex-1 flex-col gap-6 px-4 pt-6 md:gap-12 md:px-10 md:pt-12 xl:gap-[72px] xl:px-[100px]"
+        className="flex flex-1 flex-col gap-5 px-4 pt-6 md:gap-10 md:px-10 md:pt-12 xl:gap-16 xl:px-[100px]"
       >
         <h1
-          className="m-0 text-xl leading-[1.2] font-light uppercase xl:text-2xl"
+          className="m-0 text-2xl leading-[1.2] font-light uppercase"
           id="cart-heading"
         >
           Cart ({unitCount})
