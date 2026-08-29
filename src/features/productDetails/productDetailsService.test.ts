@@ -75,6 +75,67 @@ describe('Product detail API boundary', () => {
     })
   })
 
+  it('keeps available specifications when an optional specification is omitted', () => {
+    const partialSpecs = Object.fromEntries(
+      Object.entries(productDetailsPayload.specs).filter(
+        ([key]) => key !== 'screenRefreshRate',
+      ),
+    )
+
+    expect(
+      normalizeProductDetails({
+        ...productDetailsPayload,
+        specs: partialSpecs,
+      }),
+    ).toEqual(
+      expect.objectContaining({
+        status: 'success',
+        product: expect.objectContaining({ specs: partialSpecs }),
+      }),
+    )
+  })
+
+  it('accepts a Product with no storage configurations at the transport boundary', () => {
+    expect(
+      normalizeProductDetails({
+        ...productDetailsPayload,
+        storageOptions: [],
+      }),
+    ).toEqual(
+      expect.objectContaining({
+        status: 'success',
+        product: expect.objectContaining({ storageOptions: [] }),
+      }),
+    )
+  })
+
+  it.each([
+    ['identity', { id: '' }],
+    ['variant selection', { colorOptions: [] }],
+    [
+      'imagery',
+      {
+        colorOptions: [
+          {
+            ...productDetailsPayload.colorOptions[0],
+            imageUrl: '',
+          },
+        ],
+      },
+    ],
+    ['pricing', { basePrice: Number.NaN }],
+  ])('rejects an invalid required %s field', (_field, overrides) => {
+    expect(
+      normalizeProductDetails({ ...productDetailsPayload, ...overrides }),
+    ).toEqual({
+      status: 'error',
+      error: {
+        kind: 'invalid-payload',
+        message: 'The Product detail response is invalid.',
+      },
+    })
+  })
+
   it('requests the matching Product with authentication and cancellation support', async () => {
     const controller = new AbortController()
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(

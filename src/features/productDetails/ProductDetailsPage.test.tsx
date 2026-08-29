@@ -152,6 +152,42 @@ describe('Product detail route', () => {
     ).toHaveAttribute('href', '/products/iphone-15-pro')
   })
 
+  it('renders available Product specifications without inventing an omitted optional row', async () => {
+    const partialSpecs = Object.fromEntries(
+      Object.entries(productDetailsPayload().specs).filter(
+        ([key]) => key !== 'screenRefreshRate',
+      ),
+    )
+    vi.stubEnv('API_KEY', 'test-key')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        jsonResponse(
+          productDetailsPayload('galaxy-s24-ultra', {
+            specs: partialSpecs,
+          }),
+        ),
+      ),
+    )
+
+    renderProductDetails()
+
+    expect(
+      await screen.findByRole('heading', {
+        level: 1,
+        name: 'Galaxy S24 Ultra',
+      }),
+    ).toBeInTheDocument()
+    const specifications = screen.getByRole('table', {
+      name: 'Product specifications',
+    })
+    expect(within(specifications).getByText('6.8-inch AMOLED')).toBeVisible()
+    expect(
+      within(specifications).queryByText('Screen refresh rate'),
+    ).not.toBeInTheDocument()
+    expect(within(specifications).queryByText('120 Hz')).not.toBeInTheDocument()
+  })
+
   it('begins with no selected options and uses storage as the final unit price', async () => {
     const user = userEvent.setup()
     vi.stubEnv('API_KEY', 'test-key')
@@ -442,7 +478,8 @@ describe('Product detail route', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('omits the storage selector when the API provides no capacities', async () => {
+  it('explains unavailable configurations and provides a safe recovery action', async () => {
+    const user = userEvent.setup()
     vi.stubEnv('API_KEY', 'test-key')
     vi.stubGlobal(
       'fetch',
@@ -454,15 +491,26 @@ describe('Product detail route', () => {
         ),
       ),
     )
-    renderProductDetails()
+    const { onAddToCart, router } = renderProductDetails()
 
     await screen.findByRole('heading', {
       level: 1,
       name: 'Galaxy S24 Ultra',
     })
     expect(
-      screen.queryByRole('list', { name: 'Available storage capacities' }),
+      screen.queryByRole('group', { name: 'Storage' }),
     ).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'This Product has no storage configurations available.',
+    )
+    expect(
+      screen.queryByRole('button', { name: 'Add to cart' }),
+    ).not.toBeInTheDocument()
+    expect(onAddToCart).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: 'Browse Products' }))
+
+    expect(router.state.location.pathname).toBe('/')
   })
 
   it('opens a similar Product and moves focus and scroll to its beginning', async () => {

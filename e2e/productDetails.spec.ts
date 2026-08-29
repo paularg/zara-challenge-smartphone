@@ -196,6 +196,73 @@ test('direct Product detail preserves the reference composition and accessible r
   expect(browserProblems, browserProblems.join('\n')).toEqual([])
 })
 
+test('partial specifications and unavailable configurations remain actionable @critical', async ({
+  page,
+}) => {
+  const browserProblems = monitorBrowserProblems(page)
+  const partialSpecs = Object.fromEntries(
+    Object.entries(productDetailsPayload().specs).filter(
+      ([key]) => key !== 'screenRefreshRate',
+    ),
+  )
+
+  await mockProductImages(page)
+  await page.route(catalogEndpoint, (route) =>
+    route.fulfill({ json: [], status: 200 }),
+  )
+  await page.route(detailEndpoint, (route) => {
+    const productId = new URL(route.request().url()).pathname.split('/').at(-1)
+
+    return route.fulfill({
+      json:
+        productId === 'partial-specifications'
+          ? productDetailsPayload('partial-specifications', {
+              specs: partialSpecs,
+            })
+          : productDetailsPayload('unavailable-configuration', {
+              storageOptions: [],
+            }),
+      status: 200,
+    })
+  })
+
+  await page.goto('/products/partial-specifications')
+
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Galaxy S24 Ultra' }),
+  ).toBeVisible()
+  const specifications = page.getByRole('table', {
+    name: 'Product specifications',
+  })
+  await expect(specifications.getByText('6.8-inch AMOLED')).toBeVisible()
+  await expect(specifications.getByText('Screen refresh rate')).toHaveCount(0)
+  await expect(specifications.getByText('120 Hz')).toHaveCount(0)
+
+  await page.goto('/products/unavailable-configuration')
+
+  await expect(page.getByRole('status')).toContainText(
+    'This Product has no storage configurations available.',
+  )
+  await expect(page.getByRole('group', { name: 'Storage' })).toHaveCount(0)
+  await expect(page.getByRole('group', { name: 'Color' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Add to cart' })).toHaveCount(0)
+  const recoveryAction = page.getByRole('button', { name: 'Browse Products' })
+  await expect(recoveryAction).toBeVisible()
+
+  const accessibility = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag22aa'])
+    .analyze()
+  expect(
+    accessibility.violations,
+    JSON.stringify(accessibility.violations, null, 2),
+  ).toEqual([])
+
+  await recoveryAction.click()
+  await expect(page).toHaveURL(/\/$/)
+  await expect(page.getByRole('heading', { name: 'Catalog' })).toBeVisible()
+  expect(browserProblems, browserProblems.join('\n')).toEqual([])
+})
+
 test('Product variant configuration works by pointer and keyboard without extra requests @critical', async ({
   page,
 }) => {

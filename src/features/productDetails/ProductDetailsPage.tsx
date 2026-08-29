@@ -13,8 +13,10 @@ import {
 } from './productVariant'
 import { useProductDetails } from './useProductDetails'
 
-const specificationRows = (product: ProductDetails) =>
-  [
+const specificationRows = (
+  product: ProductDetails,
+): Array<readonly [string, string]> => {
+  const rows: Array<readonly [string, string | undefined]> = [
     ['Brand', product.brand],
     ['Name', product.name],
     ['Description', product.description],
@@ -26,7 +28,12 @@ const specificationRows = (product: ProductDetails) =>
     ['Battery', product.specs.battery],
     ['OS', product.specs.os],
     ['Screen refresh rate', product.specs.screenRefreshRate],
-  ] as const
+  ]
+
+  return rows.flatMap(([label, value]) =>
+    value === undefined ? [] : [[label, value] as const],
+  )
+}
 
 const BackButton = () => {
   const navigate = useNavigate()
@@ -113,12 +120,14 @@ const LoadingProduct = () => (
 type ProductContentProps = {
   headingRef: React.RefObject<HTMLHeadingElement | null>
   onAddToCart: (variant: ProductVariant) => void
+  onBrowseProducts: () => void
   product: ProductDetails
 }
 
 const ProductContent = ({
   headingRef,
   onAddToCart,
+  onBrowseProducts,
   product,
 }: ProductContentProps) => {
   const carouselRef = useRef<HTMLUListElement>(null)
@@ -144,6 +153,7 @@ const ProductContent = ({
     selectedStorage ?? null,
   )
   const displayedColor = selectedColor ?? product.colorOptions[0]
+  const hasStorageConfigurations = product.storageOptions.length > 0
 
   const handleCarouselKeyDown = (
     event: React.KeyboardEvent<HTMLUListElement>,
@@ -185,103 +195,134 @@ const ProductContent = ({
                 : `From ${product.basePrice} EUR`}
             </p>
           </div>
-          <div className="flex flex-col gap-8 xl:gap-10">
-            {product.storageOptions.length > 0 ? (
-              <fieldset className="m-0 min-w-0 border-0 p-0">
-                <legend className="p-0 text-xs font-light uppercase xl:text-sm">
-                  Storage
-                  <span aria-hidden="true">. How much space do you need?</span>
-                </legend>
-                <div className="mt-5 flex xl:mt-6">
-                  {product.storageOptions.map((storage, index) => {
-                    const optionId = `${storageGroupId}-${index}`
+          {hasStorageConfigurations ? (
+            <>
+              <div className="flex flex-col gap-8 xl:gap-10">
+                <fieldset className="m-0 min-w-0 border-0 p-0">
+                  <legend className="p-0 text-xs font-light uppercase xl:text-sm">
+                    Storage
+                    <span aria-hidden="true">
+                      . How much space do you need?
+                    </span>
+                  </legend>
+                  <div className="mt-5 flex xl:mt-6">
+                    {product.storageOptions.map((storage, index) => {
+                      const optionId = `${storageGroupId}-${index}`
 
-                    return (
-                      <div
-                        className="-ml-px first:ml-0 last:[&>label]:min-w-[95px]"
-                        key={optionId}
-                      >
-                        <input
-                          checked={selectedStorageIndex === index}
-                          className="peer sr-only"
-                          id={optionId}
-                          name={`${storageGroupId}-storage`}
-                          onChange={() => setSelectedStorageIndex(index)}
-                          type="radio"
-                        />
-                        <label
-                          className="border-border-subtle peer-checked:border-border peer-focus:outline-foreground flex h-12 min-w-[89px] cursor-pointer items-center justify-center border px-4 text-xs font-light peer-focus:relative peer-focus:outline-2 peer-focus:outline-offset-2 xl:h-[65px] xl:min-w-[95px] xl:text-sm"
-                          htmlFor={optionId}
+                      return (
+                        <div
+                          className="-ml-px first:ml-0 last:[&>label]:min-w-[95px]"
+                          key={optionId}
                         >
-                          {storage.capacity}
-                        </label>
-                      </div>
-                    )
-                  })}
-                </div>
-              </fieldset>
-            ) : null}
-            <fieldset className="m-0 min-w-0 border-0 p-0">
-              <legend className="p-0 text-xs font-light uppercase xl:text-sm">
-                Color<span aria-hidden="true">. Pick your favourite.</span>
-              </legend>
-              <div className="mt-5 flex gap-4 xl:mt-6">
-                {product.colorOptions.map((color, index) => {
-                  const optionId = `${colorGroupId}-${index}`
-
-                  return (
-                    <div key={optionId}>
-                      <input
-                        checked={selectedColorIndex === index}
-                        className="peer sr-only"
-                        id={optionId}
-                        name={`${colorGroupId}-color`}
-                        onChange={() => setSelectedColorIndex(index)}
-                        type="radio"
-                      />
-                      <label
-                        className="peer-checked:[&>span]:border-border peer-focus:[&>span]:outline-foreground flex cursor-pointer flex-col items-start gap-2 text-[10px] leading-[1.2] font-light uppercase peer-focus:[&>span]:outline-2 peer-focus:[&>span]:outline-offset-2"
-                        htmlFor={optionId}
-                      >
-                        <span
-                          aria-hidden="true"
-                          className="border-border-subtle flex size-6 items-center justify-center border"
-                        >
-                          <span
-                            className="size-5"
-                            style={{ backgroundColor: color.hexCode }}
+                          <input
+                            checked={selectedStorageIndex === index}
+                            className="peer sr-only"
+                            id={optionId}
+                            name={`${storageGroupId}-storage`}
+                            onChange={() => setSelectedStorageIndex(index)}
+                            type="radio"
                           />
-                        </span>
-                        {color.name}
-                      </label>
-                    </div>
-                  )
-                })}
+                          <label
+                            className="border-border-subtle peer-checked:border-border peer-focus:outline-foreground flex h-12 min-w-[89px] cursor-pointer items-center justify-center border px-4 text-xs font-light peer-focus:relative peer-focus:outline-2 peer-focus:outline-offset-2 xl:h-[65px] xl:min-w-[95px] xl:text-sm"
+                            htmlFor={optionId}
+                          >
+                            {storage.capacity}
+                          </label>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </fieldset>
+                <fieldset className="m-0 min-w-0 border-0 p-0">
+                  <legend className="p-0 text-xs font-light uppercase xl:text-sm">
+                    Color<span aria-hidden="true">. Pick your favourite.</span>
+                  </legend>
+                  <div className="mt-5 flex gap-4 xl:mt-6">
+                    {product.colorOptions.map((color, index) => {
+                      const optionId = `${colorGroupId}-${index}`
+
+                      return (
+                        <div key={optionId}>
+                          <input
+                            checked={selectedColorIndex === index}
+                            className="peer sr-only"
+                            id={optionId}
+                            name={`${colorGroupId}-color`}
+                            onChange={() => setSelectedColorIndex(index)}
+                            type="radio"
+                          />
+                          <label
+                            className="peer-checked:[&>span]:border-border peer-focus:[&>span]:outline-foreground flex cursor-pointer flex-col items-start gap-2 text-[10px] leading-[1.2] font-light uppercase peer-focus:[&>span]:outline-2 peer-focus:[&>span]:outline-offset-2"
+                            htmlFor={optionId}
+                          >
+                            <span
+                              aria-hidden="true"
+                              className="border-border-subtle flex size-6 items-center justify-center border"
+                            >
+                              <span
+                                className="size-5"
+                                style={{ backgroundColor: color.hexCode }}
+                              />
+                            </span>
+                            {color.name}
+                          </label>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </fieldset>
               </div>
-            </fieldset>
-          </div>
-          <Button
-            className="h-12 w-full md:w-[260px] xl:h-14 xl:w-full"
-            disabled={!selectedVariant}
-            onClick={() => {
-              if (selectedVariant) {
-                onAddToCart(selectedVariant)
-              }
-            }}
-            size="large"
-            type="button"
-          >
-            Add to cart
-          </Button>
-          <p aria-live="polite" className="sr-only" role="status">
-            {selectedColor
-              ? `Selected color: ${selectedColor.name}.`
-              : 'No color selected.'}{' '}
-            {selectedStorage
-              ? `Selected storage: ${selectedStorage.capacity}. Final price: ${selectedStorage.price} EUR.`
-              : 'No storage selected.'}{' '}
-            {selectedVariant ? 'Product variant complete.' : ''}
-          </p>
+              <Button
+                className="h-12 w-full md:w-[260px] xl:h-14 xl:w-full"
+                disabled={!selectedVariant}
+                onClick={() => {
+                  if (selectedVariant) {
+                    onAddToCart(selectedVariant)
+                  }
+                }}
+                size="large"
+                type="button"
+              >
+                Add to cart
+              </Button>
+              <p aria-live="polite" className="sr-only" role="status">
+                {selectedColor
+                  ? `Selected color: ${selectedColor.name}.`
+                  : 'No color selected.'}{' '}
+                {selectedStorage
+                  ? `Selected storage: ${selectedStorage.capacity}. Final price: ${selectedStorage.price} EUR.`
+                  : 'No storage selected.'}{' '}
+                {selectedVariant ? 'Product variant complete.' : ''}
+              </p>
+            </>
+          ) : (
+            <div
+              aria-labelledby="configuration-unavailable-heading"
+              className="flex flex-col items-start gap-5"
+              role="status"
+            >
+              <div className="flex flex-col gap-2">
+                <h2
+                  className="m-0 text-sm leading-[1.2] font-light uppercase"
+                  id="configuration-unavailable-heading"
+                >
+                  Configuration unavailable
+                </h2>
+                <p className="m-0 max-w-[380px] text-xs leading-[1.25] font-light">
+                  This Product has no storage configurations available.
+                </p>
+              </div>
+              <Button
+                className="h-12 w-full md:w-[260px] xl:h-14 xl:w-full"
+                onClick={onBrowseProducts}
+                size="large"
+                type="button"
+                variant="outline"
+              >
+                Browse Products
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -439,6 +480,7 @@ export const ProductDetailsPage = ({
       headingRef={headingRef}
       key={state.product.id}
       onAddToCart={handleAddToCart}
+      onBrowseProducts={() => navigate('/')}
       product={state.product}
     />
   )
