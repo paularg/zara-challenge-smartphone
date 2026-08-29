@@ -232,6 +232,68 @@ describe('Product detail route', () => {
     expect(screen.getByRole('button', { name: 'Add to cart' })).toBeEnabled()
   })
 
+  it('shows one color name only while its option is hovered or selected', async () => {
+    const user = userEvent.setup()
+    vi.stubEnv('API_KEY', 'test-key')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(jsonResponse(productDetailsPayload())),
+    )
+
+    renderProductDetails()
+
+    const colorGroup = await screen.findByRole('group', { name: 'Color' })
+    const black = within(colorGroup).getByRole('radio', {
+      name: 'Black titanium',
+    })
+    const blue = within(colorGroup).getByRole('radio', {
+      name: 'Blue titanium',
+    })
+
+    expect(
+      within(colorGroup).queryByText('Blue titanium', { selector: 'p' }),
+    ).not.toBeInTheDocument()
+
+    fireEvent.mouseEnter(blue.parentElement as HTMLElement)
+    expect(
+      within(colorGroup).getByText('Blue titanium', { selector: 'p' }),
+    ).toBeVisible()
+
+    fireEvent.mouseLeave(blue.parentElement as HTMLElement)
+    expect(
+      within(colorGroup).queryByText('Blue titanium', { selector: 'p' }),
+    ).not.toBeInTheDocument()
+
+    await user.click(black)
+    expect(
+      within(colorGroup).getByText('Black titanium', { selector: 'p' }),
+    ).toBeVisible()
+
+    fireEvent.mouseEnter(blue.parentElement as HTMLElement)
+    expect(
+      within(colorGroup).getByText('Blue titanium', { selector: 'p' }),
+    ).toBeVisible()
+
+    fireEvent.mouseLeave(blue.parentElement as HTMLElement)
+    expect(
+      within(colorGroup).getByText('Black titanium', { selector: 'p' }),
+    ).toBeVisible()
+
+    blue.focus()
+    await user.keyboard('{Enter}')
+    expect(blue).toBeChecked()
+    expect(
+      within(colorGroup).getByText('Blue titanium', { selector: 'p' }),
+    ).toBeVisible()
+
+    black.focus()
+    await user.keyboard(' ')
+    expect(black).toBeChecked()
+    expect(
+      within(colorGroup).getByText('Black titanium', { selector: 'p' }),
+    ).toBeVisible()
+  })
+
   it('keeps ADD TO CART disabled until the variant is complete and supports keyboard activation', async () => {
     const user = userEvent.setup()
     vi.stubEnv('API_KEY', 'test-key')

@@ -267,9 +267,24 @@ test('Product variant configuration works by pointer and keyboard without extra 
   const blue = page.getByRole('radio', { name: 'Blue titanium' })
 
   await expect(page.getByRole('group', { name: 'Storage' })).toBeVisible()
-  await expect(page.getByRole('group', { name: 'Color' })).toBeVisible()
+  const colorGroup = page.getByRole('group', { name: 'Color' })
+  await expect(colorGroup).toBeVisible()
   const addToCart = page.getByRole('button', { name: 'Add to cart' })
   await expect(addToCart).toBeDisabled()
+
+  const blackId = await black.getAttribute('id')
+  const blueId = await blue.getAttribute('id')
+  const blackLabel = page.locator(`label[for="${blackId}"]`)
+  const blueLabel = page.locator(`label[for="${blueId}"]`)
+
+  await blueLabel.hover()
+  const colorName = colorGroup.locator('p')
+  await expect(colorName).toHaveText('Blue titanium')
+  expect((await colorName.boundingBox())?.x).toBe(
+    (await blackLabel.boundingBox())?.x,
+  )
+  await expectNoHorizontalPageOverflow(page)
+  await page.getByRole('button', { name: 'Back' }).hover()
 
   const storageBoxes = await Promise.all(
     ['256 GB', '512 GB', '1 TB'].map((capacity) =>
@@ -312,14 +327,13 @@ test('Product variant configuration works by pointer and keyboard without extra 
   await expect(blue).toBeFocused()
   await expect(blue).toBeChecked()
   await expect(addToCart).toBeEnabled()
-  const blueId = await blue.getAttribute('id')
-  await expect(page.locator(`label[for="${blueId}"] > span`).first()).toHaveCSS(
+  await expect(blueLabel.locator('> span').first()).toHaveCSS(
     'outline-style',
     'solid',
   )
 
   await page.getByText('256 GB', { exact: true }).click()
-  await page.getByText('Black titanium', { exact: true }).click()
+  await blackLabel.click()
   await expect(storage256).toBeChecked()
   await expect(black).toBeChecked()
 

@@ -136,6 +136,9 @@ const ProductContent = ({
   const [selectedColorIndex, setSelectedColorIndex] = useState<number | null>(
     null,
   )
+  const [hoveredColorIndex, setHoveredColorIndex] = useState<number | null>(
+    null,
+  )
   const [selectedStorageIndex, setSelectedStorageIndex] = useState<
     number | null
   >(null)
@@ -153,6 +156,10 @@ const ProductContent = ({
     selectedStorage ?? null,
   )
   const displayedColor = selectedColor ?? product.colorOptions[0]
+  const visibleColor =
+    hoveredColorIndex === null
+      ? selectedColor
+      : product.colorOptions[hoveredColorIndex]
   const hasStorageConfigurations = product.storageOptions.length > 0
 
   const handleCarouselKeyDown = (
@@ -237,22 +244,32 @@ const ProductContent = ({
                   <legend className="p-0 text-xs font-light uppercase xl:text-sm">
                     Color<span aria-hidden="true">. Pick your favourite.</span>
                   </legend>
-                  <div className="mt-5 flex gap-4 xl:mt-6">
+                  <div className="relative mt-5 flex gap-4 xl:mt-6">
                     {product.colorOptions.map((color, index) => {
                       const optionId = `${colorGroupId}-${index}`
 
                       return (
-                        <div key={optionId}>
+                        <div
+                          key={optionId}
+                          onMouseEnter={() => setHoveredColorIndex(index)}
+                          onMouseLeave={() => setHoveredColorIndex(null)}
+                        >
                           <input
                             checked={selectedColorIndex === index}
                             className="peer sr-only"
                             id={optionId}
                             name={`${colorGroupId}-color`}
                             onChange={() => setSelectedColorIndex(index)}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter') {
+                                event.preventDefault()
+                                setSelectedColorIndex(index)
+                              }
+                            }}
                             type="radio"
                           />
                           <label
-                            className="peer-checked:[&>span]:border-border peer-focus:[&>span]:outline-foreground flex cursor-pointer flex-col items-start gap-2 text-[10px] leading-[1.2] font-light uppercase peer-focus:[&>span]:outline-2 peer-focus:[&>span]:outline-offset-2"
+                            className="peer-checked:[&>span]:border-border peer-focus:[&>span]:outline-foreground flex cursor-pointer peer-focus:[&>span]:outline-2 peer-focus:[&>span]:outline-offset-2"
                             htmlFor={optionId}
                           >
                             <span
@@ -264,11 +281,19 @@ const ProductContent = ({
                                 style={{ backgroundColor: color.hexCode }}
                               />
                             </span>
-                            {color.name}
+                            <span className="sr-only">{color.name}</span>
                           </label>
                         </div>
                       )
                     })}
+                    {visibleColor ? (
+                      <p
+                        aria-hidden="true"
+                        className="pointer-events-none absolute top-8 left-0 m-0 text-xs leading-[normal] font-light whitespace-nowrap"
+                      >
+                        {visibleColor.name}
+                      </p>
+                    ) : null}
                   </div>
                 </fieldset>
               </div>
