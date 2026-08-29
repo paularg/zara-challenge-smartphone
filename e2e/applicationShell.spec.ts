@@ -69,6 +69,17 @@ test('public routes and header navigation work cleanly @smoke', async ({
     await expect(
       page.getByRole('heading', { level: 1, name: route.heading }),
     ).toBeVisible()
+
+    const homeLink = page.getByRole('link', { name: 'MBST home' })
+    const wordmark = homeLink.locator('img')
+
+    await expect(wordmark).toBeVisible()
+    await expect(wordmark).toHaveAttribute('height', '24')
+    await expect(wordmark).toHaveAttribute('width', '74')
+    expect(await wordmark.boundingBox()).toMatchObject({
+      height: 24,
+      width: 74,
+    })
     await expectNoHorizontalPageOverflow(page)
 
     const accessibility = await new AxeBuilder({ page })
