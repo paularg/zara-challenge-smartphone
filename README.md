@@ -120,14 +120,3 @@ The canonical Figma-derived viewports are 393 × 852, 834 × 1194, and 1920 × 1
 ## Continuous integration
 
 `.github/workflows/quality.yml` installs dependencies from `pnpm-lock.yaml` with `--frozen-lockfile` and runs Prettier, ESLint, TypeScript plus the production build, Vitest, and Playwright as independent jobs. The end-to-end job deterministically installs bundled Chromium, Firefox, and WebKit plus the branded Chrome and Edge channels before running the complete configured matrix. CI supplies a non-secret placeholder `API_KEY` because every automated external request is deterministic. The workflow uploads the Playwright report for diagnosis and performs no deployment.
-
-## Outside scope
-
-This delivery intentionally excludes:
-
-- deployment or hosting;
-- server-side rendering (SSR);
-- a proxy, backend, or backend-for-frontend;
-- enabled checkout or payment behavior;
-- additional Product filters;
-- Catalog or Search pagination.
