@@ -136,6 +136,7 @@ describe('Product catalog', () => {
 
     expect(fetcher).toHaveBeenCalledTimes(2)
     expect(router.state.location.search).toBe('?search=Samsung')
+    expect(searchInput).toHaveValue('Samsung')
     expect(screen.getByText('Product 1')).toBeInTheDocument()
     expect(
       screen.getByRole('status', { name: 'Search status' }),

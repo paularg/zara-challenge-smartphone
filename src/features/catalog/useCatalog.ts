@@ -57,6 +57,18 @@ export const useCatalog = (): UseCatalogResult => {
   const hasSettledRequest = useRef(false)
   const activeRequestRef = useRef<ActiveRequest>(undefined)
 
+  useEffect(() => {
+    const animationFrame = window.requestAnimationFrame(() => {
+      setQueryDraft((currentDraft) =>
+        currentDraft.sourceQuery === confirmedQuery
+          ? currentDraft
+          : { sourceQuery: confirmedQuery, value: confirmedQuery },
+      )
+    })
+
+    return () => window.cancelAnimationFrame(animationFrame)
+  }, [confirmedQuery])
+
   const commitQuery = useCallback(
     (nextQuery: string) => {
       setSearchParams(
@@ -75,7 +87,6 @@ export const useCatalog = (): UseCatalogResult => {
     }
 
     const timeout = window.setTimeout(() => {
-      setQueryDraft({ sourceQuery: nextQuery, value: nextQuery })
       commitQuery(nextQuery)
     }, SEARCH_DEBOUNCE_MS)
 
