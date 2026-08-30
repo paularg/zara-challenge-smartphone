@@ -92,6 +92,8 @@ const renderProductDetails = (
 
 afterEach(() => {
   cleanup()
+  delete (document as unknown as { startViewTransition?: unknown })
+    .startViewTransition
   vi.restoreAllMocks()
   vi.unstubAllEnvs()
   vi.unstubAllGlobals()
@@ -480,6 +482,15 @@ describe('Product detail route', () => {
 
   it('uses available history when BACK follows catalog navigation', async () => {
     const user = userEvent.setup()
+    const finishTransition = Promise.resolve()
+    const startViewTransition = vi.fn((update: () => void) => {
+      update()
+      return { finished: finishTransition }
+    })
+    Object.defineProperty(document, 'startViewTransition', {
+      configurable: true,
+      value: startViewTransition,
+    })
     vi.stubEnv('API_KEY', 'test-key')
     vi.stubGlobal(
       'fetch',
@@ -495,6 +506,7 @@ describe('Product detail route', () => {
 
     expect(router.state.location.pathname).toBe('/')
     expect(router.state.historyAction).toBe('POP')
+    expect(startViewTransition).toHaveBeenCalledTimes(1)
   })
 
   it('keeps Product information usable when the main image fails', async () => {

@@ -99,6 +99,8 @@ const renderCatalog = (initialEntry = '/', strictMode = false) => {
 
 afterEach(() => {
   cleanup()
+  delete (document as unknown as { startViewTransition?: unknown })
+    .startViewTransition
   vi.useRealTimers()
   vi.restoreAllMocks()
   vi.unstubAllEnvs()
@@ -308,6 +310,47 @@ describe('Product catalog', () => {
         name: 'Matching Product detail',
       }),
     ).toBeInTheDocument()
+  })
+
+  it('uses a view transition when opening a Product', async () => {
+    const user = userEvent.setup()
+    let finishTransition: () => void = () => undefined
+    const transitionFinished = new Promise<void>((resolve) => {
+      finishTransition = resolve
+    })
+    const startViewTransition = vi.fn((update: () => void) => {
+      update()
+      return { finished: transitionFinished }
+    })
+    Object.defineProperty(document, 'startViewTransition', {
+      configurable: true,
+      value: startViewTransition,
+    })
+    vi.stubEnv('API_KEY', 'test-key')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(jsonResponse([productPayload('1')])),
+    )
+
+    renderCatalog()
+
+    await screen.findByRole('img', {
+      name: 'Brand 1 Product 1',
+    })
+    await user.click(
+      screen.getByRole('link', { name: 'Open Brand 1 Product 1' }),
+    )
+
+    expect(startViewTransition).toHaveBeenCalledTimes(1)
+    expect(
+      screen.getByRole('heading', {
+        level: 1,
+        name: 'Matching Product detail',
+      }),
+    ).toBeInTheDocument()
+
+    finishTransition()
+    await transitionFinished
   })
 
   it('renders the empty catalog outcome', async () => {

@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import chevronLeft from '@/assets/chevron-left.svg'
 import { ProductCard } from '@/components/shared/ProductCard'
+import { navigateBackWithProductTransition } from '@/components/shared/productNavigationTransition'
 import { Button } from '@/components/ui/button'
 
 import type { ProductDetails } from './productDetailsService'
@@ -40,12 +41,15 @@ const BackButton = () => {
 
   const handleBack = () => {
     const historyIndex = window.history.state?.idx
-
-    if (typeof historyIndex === 'number' && historyIndex > 0) {
-      navigate(-1)
-    } else {
-      navigate('/')
+    const navigateBack = () => {
+      if (typeof historyIndex === 'number' && historyIndex > 0) {
+        navigate(-1)
+      } else {
+        navigate('/')
+      }
     }
+
+    navigateBackWithProductTransition(navigateBack)
   }
 
   return (
@@ -101,7 +105,9 @@ const LoadingProduct = () => (
   <section aria-labelledby="product-heading" aria-busy="true">
     <BackButton />
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-10 px-4 pt-[5px] md:grid md:w-[calc(100%-80px)] md:max-w-[754px] md:grid-cols-[337px_minmax(0,1fr)] md:gap-[55px] md:px-0 md:pt-1 xl:w-[1200px] xl:max-w-[1200px] xl:grid-cols-[510px_380px] xl:gap-[170px] xl:pt-[110px]">
-      <div className="bg-disabled h-[273px] w-[260px] md:h-[416px] md:w-[337px] xl:h-[630px] xl:w-[510px]" />
+      <div className="h-[273px] w-[260px] md:h-[416px] md:w-[337px] xl:h-[630px] xl:w-[510px]">
+        <div className="bg-disabled size-full" />
+      </div>
       <div className="flex flex-col gap-3 md:pt-7 xl:pt-[85px]">
         <h1
           className="m-0 text-2xl leading-[1.2] font-light uppercase"

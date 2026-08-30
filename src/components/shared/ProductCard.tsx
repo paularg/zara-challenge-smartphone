@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 import { cn } from '@/lib/utils'
+import { startViewTransition } from '@/lib/viewTransition'
 
 export type ProductCardData = {
   id: string
@@ -9,6 +10,10 @@ export type ProductCardData = {
   name: string
   basePrice: number
   imageUrl: string
+}
+
+export type ProductNavigationState = {
+  focusProductStart?: boolean
 }
 
 type ProductCardProps = {
@@ -23,7 +28,36 @@ export const ProductCard = ({
   product,
 }: ProductCardProps) => {
   const [imageFailed, setImageFailed] = useState(false)
+  const navigate = useNavigate()
   const imageName = `${product.brand} ${product.name}`
+  const productPath = `/products/${encodeURIComponent(product.id)}`
+  const navigationState: ProductNavigationState = focusProductStart
+    ? { focusProductStart: true }
+    : {}
+  const handleProductNavigation = (
+    event: React.MouseEvent<HTMLAnchorElement>,
+  ) => {
+    if (focusProductStart) {
+      return
+    }
+
+    if (
+      event.button !== 0 ||
+      event.metaKey ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.shiftKey
+    ) {
+      return
+    }
+
+    event.preventDefault()
+    startViewTransition(() => {
+      navigate(productPath, {
+        state: navigationState,
+      })
+    })
+  }
 
   return (
     <li
@@ -35,8 +69,9 @@ export const ProductCard = ({
       <Link
         aria-label={`Open ${imageName}`}
         className="focus-outline group relative isolate flex h-full min-h-0 flex-col gap-6 overflow-hidden p-4"
-        state={focusProductStart ? { focusProductStart: true } : undefined}
-        to={`/products/${encodeURIComponent(product.id)}`}
+        onClick={handleProductNavigation}
+        state={navigationState}
+        to={productPath}
       >
         <div
           aria-hidden="true"
