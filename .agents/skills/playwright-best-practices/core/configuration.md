@@ -54,7 +54,7 @@ DEBUG=pw:api npx playwright test              # verbose logging
 | Pre-release validation | Multi-project: chromium + firefox + webkit |
 | Mobile-responsive app | Add mobile projects alongside desktop |
 | Auth + non-auth tests | Setup project with dependencies |
-| Tight CI budget | Chromium on PRs; all browsers on main |
+| Tight CI budget | Chromium on PRs; all browsers on master |
 
 ### globalSetup vs Setup Projects vs Fixtures
 
@@ -382,7 +382,7 @@ export default defineConfig({
 |-------|---------|------------|
 | `timeout: 300_000` globally | Masks flaky tests; slow CI | Fix root cause; keep 30s default |
 | Hardcoded URLs: `page.goto('http://localhost:4000/login')` | Breaks in other environments | Use `baseURL` + relative paths |
-| All browsers on every PR | 3x CI time | Chromium on PRs; all on main |
+| All browsers on every PR | 3x CI time | Chromium on PRs; all on master |
 | `trace: 'on'` always | Huge artifacts, slow uploads | `trace: 'on-first-retry'` |
 | `video: 'on'` always | Massive storage; slow tests | `video: 'retain-on-failure'` |
 | Config in test files: `test.use({ viewport: {...} })` everywhere | Scattered, inconsistent | Define once in project config |

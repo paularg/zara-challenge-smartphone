@@ -188,7 +188,7 @@ When reasoning about a registry item string, classify it first.
 | `https://example.com/r/button.json` | url       | Built registry item JSON at that URL.                        |
 | `./button.json`                     | file      | Built registry item JSON on disk.                            |
 | `acme/ui/button`                    | github    | Item `button` from GitHub repo `acme/ui`.                    |
-| `acme/ui/forms/login#main`          | github    | Item `forms/login` from GitHub repo `acme/ui` at ref `main`. |
+| `acme/ui/forms/login#master`        | github    | Item `forms/login` from GitHub repo `acme/ui` at ref `master`. |
 
 For namespace and GitHub addresses, slashful item names are allowed and are item
 names, not file paths. Addresses ending in `.json` keep file-address

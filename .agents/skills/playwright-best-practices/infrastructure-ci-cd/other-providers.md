@@ -286,12 +286,12 @@ workflows:
 trigger:
   branches:
     include:
-      - main
+      - master
 
 pr:
   branches:
     include:
-      - main
+      - master
 
 pool:
   vmImage: "ubuntu-latest"
@@ -348,12 +348,12 @@ steps:
 trigger:
   branches:
     include:
-      - main
+      - master
 
 pr:
   branches:
     include:
-      - main
+      - master
 
 variables:
   CI: "true"

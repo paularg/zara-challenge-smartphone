@@ -9,7 +9,7 @@
 5. [Troubleshooting](#troubleshooting)
 6. [Related](#related)
 
-> **When to use**: Automating Playwright tests on pull requests, main branch merges, or scheduled runs.
+> **When to use**: Automating Playwright tests on pull requests, master branch merges, or scheduled runs.
 
 ## CLI Commands
 
@@ -32,9 +32,9 @@ name: E2E Tests
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
-    branches: [main]
+    branches: [master]
 
 concurrency:
   group: e2e-${{ github.ref }}
@@ -98,9 +98,9 @@ name: E2E Tests (Sharded)
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
-    branches: [main]
+    branches: [master]
 
 concurrency:
   group: e2e-${{ github.ref }}
@@ -201,7 +201,7 @@ name: E2E Tests (Container)
 
 on:
   pull_request:
-    branches: [main]
+    branches: [master]
 
 jobs:
   test:
@@ -239,7 +239,7 @@ name: Staging Tests
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   workflow_dispatch:
 
 jobs:
@@ -415,7 +415,7 @@ jobs:
 name: CI
 on:
   pull_request:
-    branches: [main]
+    branches: [master]
 
 jobs:
   e2e:
@@ -434,7 +434,7 @@ jobs:
 | Small suite (< 5 min) | Single job, no sharding |
 | Medium suite (5-20 min) | 2-4 shards with matrix |
 | Large suite (20+ min) | 4-8 shards + blob merge |
-| Cross-browser on PRs | Chromium only on PRs; all browsers on main |
+| Cross-browser on PRs | Chromium only on PRs; all browsers on master |
 | Staging/prod smoke tests | Separate workflow with `environment:` |
 | Nightly full regression | `schedule` trigger + `workflow_dispatch` |
 | Multiple repos, same setup | Reusable workflow with `workflow_call` |
@@ -450,7 +450,7 @@ jobs:
 | No `timeout-minutes` | Stuck jobs run for 6 hours | Set explicit timeout: 20-30 minutes |
 | Artifacts only on failure | No report when tests pass | Use `if: ${{ !cancelled() }}` |
 | Hardcoded secrets | Security risk | Use GitHub Secrets and Environments |
-| All browsers on every PR | 3x CI cost | Chromium on PR; cross-browser on main |
+| All browsers on every PR | 3x CI cost | Chromium on PR; cross-browser on master |
 | No artifact retention | Default 90-day fills storage | Set `retention-days: 7-14` |
 | Missing `--with-deps` | Browser launch failures | Always use `npx playwright install --with-deps` |
 

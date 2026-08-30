@@ -8,7 +8,7 @@
 4. [Anti-Patterns](#anti-patterns)
 5. [Troubleshooting](#troubleshooting)
 
-> **When to use**: Running Playwright tests in GitLab pipelines on merge requests, merges to main, or scheduled pipelines.
+> **When to use**: Running Playwright tests in GitLab pipelines on merge requests, merges to master, or scheduled pipelines.
 
 ## Key Commands
 
@@ -310,7 +310,7 @@ Set up the schedule in **CI/CD > Schedules**: `0 3 * * 1-5` (3 AM UTC, weekdays)
 | ------------------------------------ | ------------------------------------------------------ | --------------------------------------------------- |
 | Simple project, < 5 min suite        | Single `test` job using Playwright Docker image        | No sharding overhead; artifacts capture report      |
 | Suite > 10 min                       | `parallel: N` with `--shard`                           | GitLab auto-assigns `CI_NODE_INDEX`/`CI_NODE_TOTAL` |
-| Merge request fast feedback          | Chromium only on MRs; all browsers on main             | 3x fewer pipeline minutes on MRs                    |
+| Merge request fast feedback          | Chromium only on MRs; all browsers on master           | 3x fewer pipeline minutes on MRs                    |
 | External services needed (DB, Redis) | `services:` keyword with Postgres/Redis images         | GitLab manages service lifecycle                    |
 | Secrets for staging environment      | GitLab CI/CD Variables (masked + protected)            | Never hardcode secrets in `.gitlab-ci.yml`          |
 | Full nightly regression              | Pipeline schedule (`CI_PIPELINE_SOURCE == "schedule"`) | Avoids blocking MR pipelines                        |
