@@ -163,6 +163,73 @@ test('catalog loads 20 Products in the reference grid and opens matching details
   expect(browserProblems, browserProblems.join('\n')).toEqual([])
 })
 
+test('Product-card hover wipes to the documented final state without moving the image @critical', async ({
+  page,
+}) => {
+  const browserProblems = monitorBrowserProblems(page)
+
+  await mockProductImages(page)
+  await page.route(productsEndpoint, (route) =>
+    route.fulfill({ json: [productPayload(1)], status: 200 }),
+  )
+
+  await page.goto('/')
+
+  const pointerCapabilities = await page.evaluate(() => ({
+    coarse: window.matchMedia('(pointer: coarse)').matches,
+    hover: window.matchMedia('(hover: hover)').matches,
+  }))
+
+  const card = page.getByRole('listitem').first()
+  const cardLink = card.getByRole('link', { name: 'Open Brand 1 Product 1' })
+  const image = card.getByRole('img', { name: 'Brand 1 Product 1' })
+  const imageBoxBeforeHover = await image.boundingBox()
+
+  await cardLink.hover()
+
+  if (pointerCapabilities.coarse || !pointerCapabilities.hover) {
+    await expect(card.getByText('Brand 1')).toHaveCSS(
+      'color',
+      'rgb(121, 115, 109)',
+    )
+    await expect(card.getByText('Product 1')).toHaveCSS('color', 'rgb(0, 0, 0)')
+    expect(await image.boundingBox()).toEqual(imageBoxBeforeHover)
+    expect(browserProblems, browserProblems.join('\n')).toEqual([])
+    return
+  }
+
+  await expect(card.getByText('Brand 1')).toHaveCSS(
+    'color',
+    'rgb(204, 204, 204)',
+  )
+  await expect(card.getByText('Product 1')).toHaveCSS(
+    'color',
+    'rgb(255, 255, 255)',
+  )
+  await expect(card.getByText('100 EUR')).toHaveCSS(
+    'color',
+    'rgb(255, 255, 255)',
+  )
+  expect(await image.boundingBox()).toEqual(imageBoxBeforeHover)
+
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.mouse.move(0, 0)
+  await expect(card.getByText('Brand 1')).toHaveCSS(
+    'color',
+    'rgb(121, 115, 109)',
+  )
+  await expect(card.getByText('Product 1')).toHaveCSS('color', 'rgb(0, 0, 0)')
+  await expect(card.getByText('100 EUR')).toHaveCSS('color', 'rgb(0, 0, 0)')
+
+  await cardLink.hover()
+  await expect(card.getByText('Product 1')).toHaveCSS(
+    'color',
+    'rgb(255, 255, 255)',
+  )
+
+  expect(browserProblems, browserProblems.join('\n')).toEqual([])
+})
+
 test('catalog recovers from an invalid payload through retry @critical', async ({
   page,
 }) => {
