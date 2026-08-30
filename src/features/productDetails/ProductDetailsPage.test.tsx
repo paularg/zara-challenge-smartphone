@@ -132,8 +132,12 @@ describe('Product detail route', () => {
       }),
     ).toHaveAttribute('src', 'https://images.example.com/black.png')
     expect(screen.queryByText('Selected')).not.toBeInTheDocument()
-    expect(screen.getByText('Black titanium')).toBeVisible()
-    expect(screen.getByText('Blue titanium')).toBeVisible()
+    expect(
+      screen.getByRole('radio', { name: 'Black titanium' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('radio', { name: 'Blue titanium' }),
+    ).toBeInTheDocument()
 
     const specifications = screen.getByRole('table', {
       name: 'Product specifications',
@@ -623,5 +627,38 @@ describe('Product detail route', () => {
 
     expect(carousel).toHaveFocus()
     expect(scrollBy).toHaveBeenCalledWith({ behavior: 'auto', left: 344 })
+  })
+
+  it('moves the similar Products scroll thumb with the carousel scroll position', async () => {
+    vi.stubEnv('API_KEY', 'test-key')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(jsonResponse(productDetailsPayload())),
+    )
+    renderProductDetails()
+
+    const carousel = await screen.findByRole('list', {
+      name: 'Similar Products carousel',
+    })
+    const track = screen.getByTestId('similar-products-scroll-track')
+    const thumb = screen.getByTestId('similar-products-scroll-thumb')
+
+    Object.defineProperties(carousel, {
+      clientWidth: { configurable: true, value: 300 },
+      scrollLeft: { configurable: true, value: 150, writable: true },
+      scrollWidth: { configurable: true, value: 600 },
+    })
+    Object.defineProperty(track, 'clientWidth', {
+      configurable: true,
+      value: 300,
+    })
+    Object.defineProperty(thumb, 'offsetWidth', {
+      configurable: true,
+      value: 100,
+    })
+
+    fireEvent.scroll(carousel)
+
+    expect(thumb).toHaveStyle({ transform: 'translateX(100px)' })
   })
 })

@@ -131,8 +131,11 @@ const ProductContent = ({
   product,
 }: ProductContentProps) => {
   const carouselRef = useRef<HTMLUListElement>(null)
+  const carouselTrackRef = useRef<HTMLDivElement>(null)
+  const carouselThumbRef = useRef<HTMLDivElement>(null)
   const colorGroupId = useId()
   const storageGroupId = useId()
+  const [carouselThumbOffset, setCarouselThumbOffset] = useState(0)
   const [selectedColorIndex, setSelectedColorIndex] = useState<number | null>(
     null,
   )
@@ -176,6 +179,78 @@ const ProductContent = ({
       left: event.key === 'ArrowRight' ? 344 : -344,
     })
   }
+
+  const updateCarouselThumb = () => {
+    const carousel = carouselRef.current
+    const track = carouselTrackRef.current
+    const thumb = carouselThumbRef.current
+
+    if (!carousel || !track || !thumb) {
+      return
+    }
+
+    const scrollableWidth = carousel.scrollWidth - carousel.clientWidth
+    const progress =
+      scrollableWidth > 0
+        ? Math.min(Math.max(carousel.scrollLeft / scrollableWidth, 0), 1)
+        : 0
+    const thumbOffset = progress * (track.clientWidth - thumb.offsetWidth)
+
+    setCarouselThumbOffset(Math.max(thumbOffset, 0))
+  }
+
+  useEffect(() => {
+    const carousel = carouselRef.current
+    const track = carouselTrackRef.current
+
+    if (!carousel || !track) {
+      return
+    }
+
+    updateCarouselThumb()
+
+    let animationFrame: number | undefined
+    const scheduleCarouselThumbUpdate = () => {
+      if (animationFrame !== undefined) {
+        window.cancelAnimationFrame(animationFrame)
+      }
+
+      animationFrame = window.requestAnimationFrame(() => {
+        animationFrame = undefined
+        updateCarouselThumb()
+      })
+    }
+
+    const resizeObserver =
+      typeof ResizeObserver === 'undefined'
+        ? undefined
+        : new ResizeObserver(scheduleCarouselThumbUpdate)
+    resizeObserver?.observe(carousel)
+    resizeObserver?.observe(track)
+
+    const observeCarouselChildren = () => {
+      Array.from(carousel.children).forEach((child) => {
+        resizeObserver?.observe(child)
+      })
+    }
+    observeCarouselChildren()
+
+    const mutationObserver = new MutationObserver(() => {
+      observeCarouselChildren()
+      scheduleCarouselThumbUpdate()
+    })
+    mutationObserver.observe(carousel, { childList: true, subtree: true })
+    window.addEventListener('resize', scheduleCarouselThumbUpdate)
+
+    return () => {
+      resizeObserver?.disconnect()
+      mutationObserver.disconnect()
+      if (animationFrame !== undefined) {
+        window.cancelAnimationFrame(animationFrame)
+      }
+      window.removeEventListener('resize', scheduleCarouselThumbUpdate)
+    }
+  }, [product])
 
   return (
     <article aria-labelledby="product-heading">
@@ -408,6 +483,7 @@ const ProductContent = ({
             aria-label="Similar Products carousel"
             className="focus-outline mt-10 flex [scrollbar-width:none] list-none gap-0 overflow-x-auto p-0 [&::-webkit-scrollbar]:hidden"
             onKeyDown={handleCarouselKeyDown}
+            onScroll={updateCarouselThumb}
             ref={carouselRef}
             tabIndex={0}
           >
@@ -422,9 +498,16 @@ const ProductContent = ({
           </ul>
           <div
             className="bg-border-subtle relative mt-10 h-px w-full"
+            data-testid="similar-products-scroll-track"
+            ref={carouselTrackRef}
             role="presentation"
           >
-            <div className="absolute inset-y-0 left-0 w-[100px] bg-black xl:w-[150px]" />
+            <div
+              className="absolute inset-y-0 left-0 w-[100px] bg-black xl:w-[150px]"
+              data-testid="similar-products-scroll-thumb"
+              ref={carouselThumbRef}
+              style={{ transform: `translateX(${carouselThumbOffset}px)` }}
+            />
           </div>
         </section>
       ) : null}

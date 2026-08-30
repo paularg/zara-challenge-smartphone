@@ -81,6 +81,33 @@ const mockProductImages = async (page: Page) => {
   )
 }
 
+const scrollThumbPosition = async (page: Page) =>
+  page.getByTestId('similar-products-scroll-thumb').evaluate((thumb) => {
+    const track = thumb.parentElement
+    const carousel = document.querySelector<HTMLUListElement>(
+      '[aria-label="Similar Products carousel"]',
+    )
+
+    if (!track || !carousel) {
+      throw new Error('Similar Products carousel elements are missing.')
+    }
+
+    const maxOffset = track.clientWidth - thumb.clientWidth
+    const scrollableWidth = carousel.scrollWidth - carousel.clientWidth
+    const progress =
+      scrollableWidth > 0
+        ? Math.min(Math.max(carousel.scrollLeft / scrollableWidth, 0), 1)
+        : 0
+
+    return {
+      expectedOffset: progress * maxOffset,
+      maxOffset,
+      offset: Number.parseFloat(
+        thumb.style.transform.match(/-?[\d.]+/)?.[0] ?? '0',
+      ),
+    }
+  })
+
 test('direct Product detail preserves the reference composition and accessible reading journey @critical', async ({
   page,
 }) => {
@@ -175,6 +202,7 @@ test('direct Product detail preserves the reference composition and accessible r
   const carousel = page.getByRole('list', {
     name: 'Similar Products carousel',
   })
+  expect((await scrollThumbPosition(page)).offset).toBe(0)
   expect(
     await page.evaluate(
       () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
@@ -185,6 +213,29 @@ test('direct Product detail preserves the reference composition and accessible r
   expect(
     await carousel.evaluate((element) => element.scrollLeft),
   ).toBeGreaterThan(0)
+  await expect
+    .poll(async () => (await scrollThumbPosition(page)).offset)
+    .toBeGreaterThan(0)
+
+  await carousel.evaluate((element) => {
+    element.scrollLeft = element.scrollWidth - element.clientWidth
+  })
+  const endPosition = await scrollThumbPosition(page)
+  await expect
+    .poll(async () => (await scrollThumbPosition(page)).offset)
+    .toBeCloseTo(endPosition.expectedOffset)
+
+  const currentViewport = page.viewportSize()
+  if (currentViewport) {
+    await page.setViewportSize({
+      height: currentViewport.height,
+      width: Math.max(320, currentViewport.width - 20),
+    })
+    const resizedPosition = await scrollThumbPosition(page)
+    await expect
+      .poll(async () => (await scrollThumbPosition(page)).offset)
+      .toBeCloseTo(resizedPosition.expectedOffset)
+  }
 
   const accessibility = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag22aa'])
@@ -193,6 +244,42 @@ test('direct Product detail preserves the reference composition and accessible r
     accessibility.violations,
     JSON.stringify(accessibility.violations, null, 2),
   ).toEqual([])
+  expect(browserProblems, browserProblems.join('\n')).toEqual([])
+})
+
+test('similar Products scroll indicator stays at its start without overflow', async ({
+  page,
+}) => {
+  const browserProblems = monitorBrowserProblems(page)
+
+  await mockProductImages(page)
+  await page.route(detailEndpoint, (route) =>
+    route.fulfill({
+      json: productDetailsPayload('single-similar-product', {
+        similarProducts: [
+          productSummary('iphone-15-pro', 'Apple', 'iPhone 15 Pro', 1219),
+        ],
+      }),
+      status: 200,
+    }),
+  )
+
+  await page.goto('/products/single-similar-product')
+  const carousel = page.getByRole('list', {
+    name: 'Similar Products carousel',
+  })
+  await carousel.evaluate((element) => {
+    element.scrollLeft = 100
+  })
+
+  await expect
+    .poll(async () => (await scrollThumbPosition(page)).offset)
+    .toBe(0)
+  expect(
+    await carousel.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth,
+    ),
+  ).toBe(true)
   expect(browserProblems, browserProblems.join('\n')).toEqual([])
 })
 
