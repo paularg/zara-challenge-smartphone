@@ -111,7 +111,6 @@ const PayButton = () => (
   <Button
     aria-describedby={checkoutDescriptionId}
     className="order-3 h-12 w-full min-w-0 px-4 md:col-start-4 md:w-[260px] xl:h-14"
-    disabled
     size="medium"
     type="button"
   >
