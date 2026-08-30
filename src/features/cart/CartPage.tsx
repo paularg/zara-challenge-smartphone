@@ -10,8 +10,6 @@ import {
   type CartLine,
 } from './cartStore'
 
-const checkoutDescriptionId = 'checkout-unavailable-description'
-
 const formatPrice = (price: number) => `${price} EUR`
 
 const readCartAnnouncement = (state: unknown) => {
@@ -109,7 +107,6 @@ const ContinueShoppingButton = () => (
 
 const PayButton = () => (
   <Button
-    aria-describedby={checkoutDescriptionId}
     className="order-3 h-12 w-full min-w-0 px-4 md:col-start-4 md:w-[260px] xl:h-14"
     size="medium"
     type="button"
@@ -197,9 +194,6 @@ export const CartPage = () => {
 
       <p aria-live="polite" className="sr-only" role="status">
         {announcement}
-      </p>
-      <p className="sr-only" id={checkoutDescriptionId}>
-        Checkout is outside this exercise.
       </p>
     </div>
   )

@@ -181,10 +181,7 @@ test('configured Product persists into the responsive Cart without refetching or
   await expectNoHorizontalPageOverflow(page)
 
   const pay = page.getByRole('button', { name: 'Pay' })
-  await expect(pay).toBeDisabled()
-  await expect(pay).toHaveAccessibleDescription(
-    'Checkout is outside this exercise.',
-  )
+  await expect(pay).toBeEnabled()
 
   const lineBox = await cartLine.boundingBox()
   const footerBox = await cartActions.boundingBox()
