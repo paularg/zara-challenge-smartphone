@@ -148,7 +148,7 @@ describe('Product detail route', () => {
     expect(within(specifications).getByText('120 Hz')).toBeVisible()
 
     const similarProducts = screen.getByRole('region', {
-      name: 'Similar Products',
+      name: 'Similar Items',
     })
     expect(
       within(similarProducts).getByRole('link', {
@@ -537,7 +537,7 @@ describe('Product detail route', () => {
       name: 'Galaxy S24 Ultra',
     })
     expect(
-      screen.queryByRole('region', { name: 'Similar Products' }),
+      screen.queryByRole('region', { name: 'Similar Items' }),
     ).not.toBeInTheDocument()
   })
 
@@ -618,7 +618,7 @@ describe('Product detail route', () => {
     renderProductDetails()
 
     const carousel = await screen.findByRole('list', {
-      name: 'Similar Products carousel',
+      name: 'Similar Items carousel',
     })
     const scrollBy = vi.fn()
     carousel.scrollBy = scrollBy
@@ -638,7 +638,7 @@ describe('Product detail route', () => {
     renderProductDetails()
 
     const carousel = await screen.findByRole('list', {
-      name: 'Similar Products carousel',
+      name: 'Similar Items carousel',
     })
     const track = screen.getByTestId('similar-products-scroll-track')
     const thumb = screen.getByTestId('similar-products-scroll-thumb')

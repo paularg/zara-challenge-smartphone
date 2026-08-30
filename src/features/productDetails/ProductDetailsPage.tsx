@@ -477,10 +477,10 @@ const ProductContent = ({
             className="m-0 text-xl leading-[1.2] font-light uppercase"
             id="similar-products-heading"
           >
-            Similar Products
+            Similar Items
           </h2>
           <ul
-            aria-label="Similar Products carousel"
+            aria-label="Similar Items carousel"
             className="focus-outline mt-10 flex [scrollbar-width:none] list-none gap-0 overflow-x-auto p-0 [&::-webkit-scrollbar]:hidden"
             onKeyDown={handleCarouselKeyDown}
             onScroll={updateCarouselThumb}

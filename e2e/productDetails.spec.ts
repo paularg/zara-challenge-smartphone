@@ -85,11 +85,11 @@ const scrollThumbPosition = async (page: Page) =>
   page.getByTestId('similar-products-scroll-thumb').evaluate((thumb) => {
     const track = thumb.parentElement
     const carousel = document.querySelector<HTMLUListElement>(
-      '[aria-label="Similar Products carousel"]',
+      '[aria-label="Similar Items carousel"]',
     )
 
     if (!track || !carousel) {
-      throw new Error('Similar Products carousel elements are missing.')
+      throw new Error('Similar Items carousel elements are missing.')
     }
 
     const maxOffset = track.clientWidth - thumb.clientWidth
@@ -162,7 +162,7 @@ test('direct Product detail preserves the reference composition and accessible r
   }
 
   const similarProducts = page.getByRole('region', {
-    name: 'Similar Products',
+    name: 'Similar Items',
   })
   await expect(similarProducts.getByRole('listitem')).toHaveCount(5)
   await expect(
@@ -200,7 +200,7 @@ test('direct Product detail preserves the reference composition and accessible r
   }
 
   const carousel = page.getByRole('list', {
-    name: 'Similar Products carousel',
+    name: 'Similar Items carousel',
   })
   expect((await scrollThumbPosition(page)).offset).toBe(0)
   expect(
@@ -231,6 +231,15 @@ test('direct Product detail preserves the reference composition and accessible r
       height: currentViewport.height,
       width: Math.max(320, currentViewport.width - 20),
     })
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          window.dispatchEvent(new Event('resize'))
+          window.requestAnimationFrame(() =>
+            window.requestAnimationFrame(() => resolve()),
+          )
+        }),
+    )
     const resizedPosition = await scrollThumbPosition(page)
     await expect
       .poll(async () => (await scrollThumbPosition(page)).offset)
@@ -266,7 +275,7 @@ test('similar Products scroll indicator stays at its start without overflow', as
 
   await page.goto('/products/single-similar-product')
   const carousel = page.getByRole('list', {
-    name: 'Similar Products carousel',
+    name: 'Similar Items carousel',
   })
   await carousel.evaluate((element) => {
     element.scrollLeft = 100
@@ -519,9 +528,9 @@ test('similar Product navigation reuses payload cards then starts the new Produc
   await expect(nextHeading).toBeFocused()
   await expect(page).toHaveURL(/\/products\/iphone-15-pro$/)
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
-  await expect(
-    page.getByRole('region', { name: 'Similar Products' }),
-  ).toHaveCount(0)
+  await expect(page.getByRole('region', { name: 'Similar Items' })).toHaveCount(
+    0,
+  )
   expect(detailRequestCount).toBe(2)
   expect(browserProblems, browserProblems.join('\n')).toEqual([])
 })

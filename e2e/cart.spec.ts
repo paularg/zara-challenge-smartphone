@@ -88,6 +88,14 @@ const mockStableProductApi = async (page: Page) => {
   )
 }
 
+const selectColor = async (page: Page, colorName: string) => {
+  await page
+    .getByRole('group', { name: 'Color' })
+    .locator('label')
+    .filter({ hasText: colorName })
+    .click()
+}
+
 const readRuntimeDeviceProfile = (page: Page) =>
   page.evaluate(() => ({
     devicePixelRatio: window.devicePixelRatio,
@@ -140,7 +148,7 @@ test('configured Product persists into the responsive Cart without refetching or
   await expect(addToCart).toBeDisabled()
   await page.getByText('512 GB', { exact: true }).click()
   await expect(addToCart).toBeDisabled()
-  await page.getByText('Blue titanium', { exact: true }).click()
+  await selectColor(page, 'Blue titanium')
   await expect(addToCart).toBeEnabled()
   await addToCart.focus()
   await page.keyboard.press('Enter')
@@ -227,7 +235,7 @@ test('configured Product persists into the responsive Cart without refetching or
     .click()
   await expect(page).toHaveURL(/\/products\/galaxy-s24-ultra$/)
   await page.getByText('512 GB', { exact: true }).click()
-  await page.getByText('Blue titanium', { exact: true }).click()
+  await selectColor(page, 'Blue titanium')
   await expect(page.getByText('1299 EUR', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Add to cart' }).click()
 
@@ -373,7 +381,7 @@ test('Product and Cart typography uses the binding design tokens', async ({
   )
 
   await page.getByText('256 GB', { exact: true }).click()
-  await page.getByText('Black titanium', { exact: true }).click()
+  await selectColor(page, 'Black titanium')
   await page.getByRole('button', { name: 'Add to cart' }).click()
 
   await expect(
@@ -399,7 +407,7 @@ test('different variants of the same Product remain separate Cart lines @critica
 
   await page.goto('/products/galaxy-s24-ultra')
   await page.getByText('256 GB', { exact: true }).click()
-  await page.getByText('Black titanium', { exact: true }).click()
+  await selectColor(page, 'Black titanium')
   await page.getByRole('button', { name: 'Add to cart' }).click()
 
   await page.getByRole('link', { name: 'Continue shopping' }).click()
@@ -407,7 +415,7 @@ test('different variants of the same Product remain separate Cart lines @critica
     .getByRole('link', { name: 'Open Samsung Galaxy S24 Ultra' })
     .click()
   await page.getByText('512 GB', { exact: true }).click()
-  await page.getByText('Blue titanium', { exact: true }).click()
+  await selectColor(page, 'Blue titanium')
   await page.getByRole('button', { name: 'Add to cart' }).click()
 
   await expect(
